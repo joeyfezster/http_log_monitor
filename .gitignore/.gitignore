@@ -1,6 +1,6 @@
 #intellij
-.idea/
-target/
+.idea/*
+*target/
 project/
 
 # Compiled class file
