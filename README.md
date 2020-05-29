@@ -11,3 +11,17 @@ For development, I've used the following system/environment/dev tools:
 ## Running Instructions
 
 ## Next Steps
+
+### Configurations
+I have implemented an embedded configuration object. 
+It would be better to use something like [typesafe config](https://github.com/lightbend/config)
+so that a configuration change would not require repackaging of the program.
+
+### Logging
+Logging outputs for spark have been silenced. This is obviously not a good
+idea for production code - since it would be impossible to address or analyze 
+many potential bugs, but I wanted to provide you with a simple output, so that 
+the desired result is neatly in the stdout.
+
+There may be error messages due to lack of hadoop-related resources.
+- https://stackoverflow.com/questions/35652665/java-io-ioexception-could-not-locate-executable-null-bin-winutils-exe-in-the-ha
