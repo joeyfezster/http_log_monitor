@@ -8,15 +8,21 @@ import com.typesafe.scalalogging.LazyLogging
 
 class LogLineParser(config: Config) extends LazyLogging {
 
-  def parse(line: String): LogLine = try {
+  def parse(filepath: String, columns: List[String]): LogLine = try {
+    print(columns)
+    UnparsableEvent("")
+  }
+
+  def parse(filepath: String, line: String): LogLine = try {
     line match {
       case _ if line == config.getString("schema.legal-headers") => Headers(line)
       case _ => parseEventLine(line)
     }
-  } catch
-    {
-      case e: Throwable =>logger.error(s"Failed to parse line $line\n; $e: ${e.getMessage}"); UnparsableEvent(line)
-    }
+  } catch {
+    case e: Throwable =>
+      logger.error(s"Failed to parse from $filepath\n $line: $e: ${e.getMessage}")
+      UnparsableEvent(line)
+  }
 
 
   private def parseEventLine(line: String): LogLine = try {
@@ -55,4 +61,12 @@ class LogLineParser(config: Config) extends LazyLogging {
     }
     else None
   }
+}
+
+object LogLineParser extends LazyLogging {
+  def testLogger = {
+    logger.info("info")
+    logger.error("error")
+  }
+
 }

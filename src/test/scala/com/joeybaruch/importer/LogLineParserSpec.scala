@@ -13,30 +13,30 @@ class LogLineParserSpec extends AnyFlatSpec with Matchers {
   private val config: Config = ConfigFactory.load()
   val logLineParser = new LogLineParser(config)
 
-  it should "parse valid log lines" in {
-    val parsedEventWithSection = logLineParser.parse(goodLineWithSection)
-    val parsedEventWithoutSection = logLineParser.parse(goodLineWithoutSection)
-
-    parsedEventWithSection should equal (goodLineEventWithSection)
-    parsedEventWithoutSection should equal (goodLineEventWithoutSection)
-  }
-
-  it should "parse a headers line" in {
-    val headers = config.getString("schema.legal-headers")
-    val parsedHeaders = logLineParser.parse(headers)
-
-    parsedHeaders should be (Headers(headers))
-  }
-
-  it should "parse a bad line as Unparsable" in {
-    val parsedBadLine = logLineParser.parse(badLine)
-    parsedBadLine should be (UnparsableEvent(badLine))
-  }
-
-  it should "parse a good line with a bad request as Unparsable" in {
-    val parsedGoodLineWithBadRequest = logLineParser.parse(goodLineWithBadRequest)
-    parsedGoodLineWithBadRequest should be (UnparsableEvent(goodLineWithBadRequest))
-  }
+//  ignore should "parse valid log lines" in {
+//    val parsedEventWithSection = logLineParser.parse(goodLineWithSection)
+//    val parsedEventWithoutSection = logLineParser.parse(goodLineWithoutSection)
+//
+//    parsedEventWithSection should equal (goodLineEventWithSection)
+//    parsedEventWithoutSection should equal (goodLineEventWithoutSection)
+//  }
+//
+//  ignore should "parse a headers line" in {
+//    val headers = config.getString("schema.legal-headers")
+//    val parsedHeaders = logLineParser.parse(headers)
+//
+//    parsedHeaders should be (Headers(headers))
+//  }
+//
+//  it should "parse a bad line as Unparsable" in {
+//    val parsedBadLine = logLineParser.parse(badLine)
+//    parsedBadLine should be (UnparsableEvent(badLine))
+//  }
+//
+//  it should "parse a good line with a bad request as Unparsable" in {
+//    val parsedGoodLineWithBadRequest = logLineParser.parse(goodLineWithBadRequest)
+//    parsedGoodLineWithBadRequest should be (UnparsableEvent(goodLineWithBadRequest))
+//  }
 
   //todo: whitebox test the regex
 
