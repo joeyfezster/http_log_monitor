@@ -9,6 +9,9 @@ out/
 
 .classpath
 
+# local ivy folder
+null/
+
 # Compiled class file
 *.class
 
