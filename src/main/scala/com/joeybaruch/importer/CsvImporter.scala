@@ -12,12 +12,12 @@ import akka.{Done, NotUsed}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 import com.joeybaruch.datamodel.{InvalidReading, Reading, ValidReading}
-import com.joeybaruch.repository.ReadingRepository
+//import com.joeybaruch.repository.ReadingRepository
 
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
-class CsvImporter(config: Config, readingRepository: ReadingRepository)
+class CsvImporter(config: Config/*, readingRepository: ReadingRepository*/)
                  (implicit system: ActorSystem) extends LazyLogging {
 
   import system.dispatcher
@@ -66,7 +66,7 @@ class CsvImporter(config: Config, readingRepository: ReadingRepository)
 
   val storeReadings: Sink[ValidReading, Future[Done]] =
     Flow[ValidReading]
-      .mapAsyncUnordered(concurrentWrites)(readingRepository.save)
+      .mapAsyncUnordered(concurrentWrites)(_ => Future{})//(readingRepository.save)
       .toMat(Sink.ignore)(Keep.right)
 
   val processSingleFile: Flow[File, ValidReading, NotUsed] =
