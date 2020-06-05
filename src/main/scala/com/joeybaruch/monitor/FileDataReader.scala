@@ -6,14 +6,11 @@ import java.nio.file.Paths
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.csv.scaladsl.CsvParsing
-import akka.stream.scaladsl.{Flow, Framing, Source, StreamConverters}
+import akka.stream.scaladsl.{Flow, Source, StreamConverters}
 import akka.util.ByteString
 import com.joeybaruch.datamodel.{LogEvent, LogLine}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
-import org.apache.commons.lang3.StringEscapeUtils
-
-import scala.util.Properties
 
 class FileDataReader(config: Config, parser: LogParser)
                     (implicit system: ActorSystem) extends LazyLogging {
