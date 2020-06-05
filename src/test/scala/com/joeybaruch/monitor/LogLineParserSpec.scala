@@ -1,4 +1,4 @@
-package com.joeybaruch.importer
+package com.joeybaruch.monitor
 
 import java.sql.Timestamp
 
@@ -11,7 +11,7 @@ class LogLineParserSpec extends AnyFlatSpec with Matchers {
 
   behavior of "LogLineParser"
   private val config: Config = ConfigFactory.load()
-  val logLineParser = new LogLineParser(config)
+//  val logLineParser = new LogLineParser(config)
 
 //  ignore should "parse valid log lines" in {
 //    val parsedEventWithSection = logLineParser.parse(goodLineWithSection)
@@ -66,6 +66,6 @@ class LogLineParserSpec extends AnyFlatSpec with Matchers {
   val requestWithSection = Request(method, endpointWithSection, Some(section), protocol)
   val requestWithoutSection = Request(method, endpointWithoutSection, None, protocol)
 
-  val goodLineEventWithSection = LogEvent(host, rfc, authUser, new Timestamp(strTimestamp.toLong), requestWithSection, status.toInt, bytes.toInt)
-  val goodLineEventWithoutSection = LogEvent(host, rfc, authUser, new Timestamp(strTimestamp.toLong), requestWithoutSection, status.toInt, bytes.toInt)
+  val goodLineEventWithSection = LogEvent(host, rfc, authUser, strTimestamp.toLong, requestWithSection, status.toInt, bytes.toInt)
+  val goodLineEventWithoutSection = LogEvent(host, rfc, authUser, strTimestamp.toLong, requestWithoutSection, status.toInt, bytes.toInt)
 }
