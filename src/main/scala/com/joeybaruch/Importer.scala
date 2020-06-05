@@ -2,7 +2,7 @@ package com.joeybaruch
 
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
-import com.joeybaruch.importer.CsvImporter
+import com.joeybaruch.monitor.CsvImporter
 //import com.joeybaruch.repository.ReadingRepository
 
 
