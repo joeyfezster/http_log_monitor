@@ -4,7 +4,7 @@ import com.joeybaruch.datamodel._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
-class CSVLogParser(config: Config) extends LogParser with LazyLogging {
+class ColumnarLogParser(config: Config) extends LogParser with LazyLogging {
 
   def parse(columns: List[String], filename: Option[String] = None): LogLine = try {
     logger.debug(s"parsing $columns")

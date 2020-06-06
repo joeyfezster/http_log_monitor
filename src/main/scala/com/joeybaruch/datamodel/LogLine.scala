@@ -12,7 +12,10 @@ case class LogEvent(host: String,
                     timestamp: Long,
                     request: Request,
                     status: Int,
-                    bytes: Int) extends LogLine
+                    bytes: Int) extends LogLine with Ordered[LogEvent]{
+
+  // negating the compareTo result of two positive numbers will result in ascending order - which we need for oldest first
+  override def compare(that: LogEvent): Int = - this.timestamp.compareTo(that.timestamp)
+}
 
 case class UnparsableEvent(string: Seq[String]) extends LogLine
-

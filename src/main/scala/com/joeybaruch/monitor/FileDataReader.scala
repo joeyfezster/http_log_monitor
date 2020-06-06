@@ -12,6 +12,8 @@ import com.joeybaruch.datamodel.{LogEvent, LogLine}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
+import scala.collection.mutable
+
 class FileDataReader(config: Config, parser: LogParser)
                     (implicit system: ActorSystem) extends LazyLogging {
 
@@ -38,11 +40,12 @@ class FileDataReader(config: Config, parser: LogParser)
     }
 
   val collectLogEvents: Flow[LogLine, LogEvent, NotUsed] =
-    Flow[LogLine]. /*windowing?*/ collect { case logEvent: LogEvent => logEvent } //todo: add windowing here?
+    Flow[LogLine].collect { case logEvent: LogEvent => logEvent }
 
   val csvParser: Flow[ByteString, List[String], NotUsed] =
     CsvParsing.lineScanner(delimiter = ',', quoteChar = '"', escapeChar = ' ')
-      .map(byteSrtingList => byteSrtingList.map(_.utf8String))
+      .map(byteStringList => byteStringList.map(_.utf8String))
+
 
   private def parseLine(filePath: String)(columns: List[String]): LogLine = parser.parse(columns, Some(filePath))
 }
