@@ -30,7 +30,7 @@ class ColumnarLogParser(config: Config) extends LogParser with LazyLogging {
       //todo: is there a better way to enforce schema?
       case List(remoteHost, rfc931, authUser, timestamp, request, status, bytes)
         if areNumeric(timestamp, status, bytes) =>
-        LogEvent(remoteHost, rfc931, authUser, timestamp.toLong, getRequest(request), status.toInt, bytes.toInt)
+        LogEvent(remoteHost, rfc931, authUser, timestamp.toLong, getRequest(request), status, bytes.toInt)
       case _ => logger.error(s"unable to parse log event: $columns"); UnparsableEvent(columns)
     }
   }
@@ -47,12 +47,13 @@ class ColumnarLogParser(config: Config) extends LogParser with LazyLogging {
   private def areNumeric(inputs: String*): Boolean = inputs.forall(str => str.forall(char => char.isDigit))
 
   private def getSection(endpoint: String): Option[String] = {
-    val components = endpoint.split("/")
     val sectionComponentIndex = config.getInt("schema.section-component-index")
+    val sectionDelimiter = config.getString("schema.section-delimiter")
+    val components = endpoint.split(sectionDelimiter)
 
     if (sectionComponentIndex < components.length) {
-      logger.debug(s"extracted section ${components(sectionComponentIndex)} from $endpoint")
-      Some(components(sectionComponentIndex))
+      logger.debug(s"extracted section ${sectionDelimiter}${components(sectionComponentIndex)} from $endpoint")
+      Some(s"$sectionDelimiter${components(sectionComponentIndex)}")
     }
     else None
   }

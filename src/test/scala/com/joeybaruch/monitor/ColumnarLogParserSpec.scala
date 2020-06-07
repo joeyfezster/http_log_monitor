@@ -22,11 +22,6 @@ class ColumnarLogParserSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
     result should be(goodLineEventWithSection)
   }
 
-  it should "parse a correct event without a section in the request" in {
-    val result = parserUnderTest.parse(goodLineWithoutSection)
-    result should be(goodLineEventWithoutSection)
-  }
-
   it should "parse an event with a bad request as unparsable" in {
     val result = parserUnderTest.parse(goodLineWithBadRequest)
     result should be(UnparsableEvent(goodLineWithBadRequest))
@@ -51,23 +46,18 @@ class ColumnarLogParserSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
   private lazy val strTimestamp = "1549573860"
   private lazy val protocol = "HTTP/1.0"
   private lazy val method = "GET"
-  private lazy val section = "user"
-  private lazy val endpointWithSection = "/api/" + section
-  private lazy val endpointWithoutSection = "/report"
+  private val section = "/api"
+  private lazy val endpointWithSection = s"$section/user"
   private lazy val strRequestWithSection = method + " " + endpointWithSection + " " + protocol
-  private lazy val strRequestWithoutSection = method + " " + endpointWithoutSection + " " + protocol
   private lazy val strBadRequest = "bad request here - too many fields"
   private lazy val bytes = "1234"
   private lazy val status = "200"
 
   lazy val goodLineWithSection = List(host, rfc, authUser, strTimestamp, strRequestWithSection, status, bytes)
-  lazy val goodLineWithoutSection = List(host, rfc, authUser, strTimestamp, strRequestWithoutSection, status, bytes)
   lazy val goodLineWithBadRequest = List(host, rfc, authUser, strTimestamp, strBadRequest, status, bytes)
   lazy val badLine = List("fdjkdfjkd, jkdjkfdl, jk", "jkjfdsa", "jkfdasda")
 
   lazy val requestWithSection: Request = Request(method, endpointWithSection, Some(section), protocol)
-  lazy val requestWithoutSection: Request = Request(method, endpointWithoutSection, None, protocol)
 
-  lazy val goodLineEventWithSection: LogEvent = LogEvent(host, rfc, authUser, strTimestamp.toLong, requestWithSection, status.toInt, bytes.toInt)
-  lazy val goodLineEventWithoutSection: LogEvent = LogEvent(host, rfc, authUser, strTimestamp.toLong, requestWithoutSection, status.toInt, bytes.toInt)
+  lazy val goodLineEventWithSection: LogEvent = LogEvent(host, rfc, authUser, strTimestamp.toLong, requestWithSection, status, bytes.toInt)
 }
