@@ -1,6 +1,6 @@
 package com.joeybaruch.monitor
 
-import com.joeybaruch.datamodel.{Headers, LogEvent, Request, UnparsableEvent}
+import com.joeybaruch.datamodel.{Headers, LogEvent, LogEventImpl, Request, UnparsableEvent}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -44,8 +44,8 @@ class ColumnarLogParserSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
   private lazy val rfc = "-"
   private lazy val authUser = "apache"
   private lazy val strTimestamp = "1549573860"
-  private lazy val protocol = "HTTP/1.0"
-  private lazy val method = "GET"
+  private lazy val protocol = "http/1.0"
+  private lazy val method = "get"
   private val section = "/api"
   private lazy val endpointWithSection = s"$section/user"
   private lazy val strRequestWithSection = method + " " + endpointWithSection + " " + protocol
@@ -59,5 +59,5 @@ class ColumnarLogParserSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
 
   lazy val requestWithSection: Request = Request(method, endpointWithSection, Some(section), protocol)
 
-  lazy val goodLineEventWithSection: LogEvent = LogEvent(host, rfc, authUser, strTimestamp.toLong, requestWithSection, status, bytes.toInt)
+  lazy val goodLineEventWithSection: LogEvent = LogEventImpl(host, rfc, authUser, strTimestamp.toLong, requestWithSection, status, bytes.toInt)
 }

@@ -4,19 +4,12 @@ import scala.math.{max, min}
 
 object AggregatedMetrics {
 
-  //  trait AggregatableMetric{
-  //    val eventCount: Long
-  //    val earliestTimestamp: Long
-  //    val latestTimestamp: Long
-  //
-  //    lazy val timeSpan = latestTimestamp - earliestTimestamp
-  //
-  //    def +(that: AggregatableMetric): AggregatableMetric
-  //  }
+  type NamedCountersCollection = Map[String, Long]
+  type NamedCountersHyperCollection = Map[String, Map[String, Long]]
 
   // implicit class lets us define our own methods on existing classes - like Map[String, Long]
-  implicit class NamedCountersCollection(val map: Map[String, Long]) {
-    def unionWith(that: NamedCountersCollection): Map[String, Long] = {
+  implicit class StringLongMapExtension(val map: Map[String, Long]) {
+    def unionWith(that: StringLongMapExtension): Map[String, Long] = {
       val kvPairsConcat: Seq[(String, Long)] = this.map.toList ++ that.map.toList
       val groupedByKey = kvPairsConcat.groupBy(_._1)
       val mergedByValue = groupedByKey.map { case (key, kvSeq) => key -> kvSeq.foldLeft(0L)(_ + _._2) }
@@ -24,8 +17,8 @@ object AggregatedMetrics {
     }
   }
 
-  implicit class NamedCountersHypercollection(val map: Map[String, Map[String, Long]]) {
-    def unionWith(that: NamedCountersHypercollection): Map[String, Map[String, Long]] = {
+  implicit class StringMapStringLongExtension(val map: Map[String, Map[String, Long]]) {
+    def unionWith(that: StringMapStringLongExtension): Map[String, Map[String, Long]] = {
       val kvPairsConcat: Seq[(String, Map[String, Long])] = this.map.toList ++ that.map.toList
       val groupedByKey = kvPairsConcat.groupBy(_._1)
       val mergedByValue = groupedByKey.map { case (key, strAndNamedCountersSeq) =>
@@ -35,76 +28,52 @@ object AggregatedMetrics {
     }
   }
 
-  case class TruncatedAggregatedMetrics(val eventCount: Long,
-                                   val earliestTimestamp: Long,
-                                   val latestTimestamp: Long,
-                                   val sectionCounters: NamedCountersCollection) {
+  case class BaseAggregatedMetrics(/** ****** window info *********/
+                                   eventCount: Long,
+                                   earliestTimestamp: Long,
+                                   latestTimestamp: Long,
+
+                                   /** ****** business metrics *********/
+                                   sectionCounters: NamedCountersCollection) {
 
     val timeSpan: Long = latestTimestamp - earliestTimestamp
 
-    def +(that: TruncatedAggregatedMetrics): TruncatedAggregatedMetrics = {
-      //todo - eli, how do I not repeat myself here?
-      val newEventCount = this.eventCount + that.earliestTimestamp
+
+    def +(that: BaseAggregatedMetrics): BaseAggregatedMetrics = {
+      val newEventCount = this.eventCount + that.eventCount
       val newEarliestTimestamp = min(this.earliestTimestamp, that.earliestTimestamp)
       val newLatestTimestamp = max(this.latestTimestamp, that.latestTimestamp)
       val newSectionCounters = this.sectionCounters unionWith that.sectionCounters
 
-      new TruncatedAggregatedMetrics(newEventCount, newEarliestTimestamp, newLatestTimestamp, newSectionCounters)
+      BaseAggregatedMetrics(newEventCount, newEarliestTimestamp, newLatestTimestamp, newSectionCounters)
     }
 
   }
 
-  //
-  //  case class ThinAggregatedMetrics(
-  //                                    override val representedEventCount: Long,
-  //                                    override val earliestTimestamp: Long,
-  //                                    override val latestTimestamp: Long,
-  //
-  //                                    sectionCounter: NamedCounterCollection
-  //                                  ) extends AggregatedMetrics(representedEventCount, earliestTimestamp, latestTimestamp) {
-  //
 
-  //
-  //    def +(that: ThinAggregatedMetrics): ThinAggregatedMetrics = {
-  //      val upper = super.+(that)
-  //      val mergedSectionCounter = mergeMultipleChoiceCounters(this.sectionCounter, that.sectionCounter)
-  //      ThinAggregatedMetrics(upper.representedEventCount, upper.earliestTimestamp, upper.latestTimestamp, mergedSectionCounter)
-  //    }
-  //  }
+  case class DebugAggregatedMetrics(baseAggregatedMetrics: BaseAggregatedMetrics,
 
-  case class DebugAggregatedMetrics(
-                                /** ****** window info *********/
-                                val eventCount: Long,
-                                val earliestTimestamp: Long,
-                                val latestTimestamp: Long,
+                                    /** ****** business metrics *********/
+                                    httpMethodsCounters: NamedCountersCollection,
+                                    // could specific http methods/verbs be having negative trends?
+                                    httpMethodResponseStatusCounters: NamedCountersHyperCollection,
 
-                                /** ****** business metrics *********/
-                                val httpMethodsCounters: NamedCountersCollection,
-                                // could specifc http methods/verbs be having negative trends?
-                                val httpMethodResponseStatusCounters: NamedCountersHypercollection,
+                                    hostsCounters: NamedCountersCollection,
+                                    // could specific hosts have bad response trends?
+                                    hostResponseStatusCounters: NamedCountersHyperCollection,
 
-                                val hostsCounters: NamedCountersCollection,
-                                // could specific hosts have bad response trends?
-                                val hostResponseStatusCounters: NamedCountersHypercollection,
+                                    // could specific sections have bad response trends?
+                                    sectionResponseStatusCounters: NamedCountersHyperCollection,
 
-                                val sectionsCounters: NamedCountersCollection,
-                                // could specific sections have bad response trends?
-                                val sectionResponseStatusCounters: NamedCountersHypercollection,
+                                    usersCounters: NamedCountersCollection,
+                                    // could specific users have bad response trends?
+                                    userResponseStatusCounter: NamedCountersHyperCollection,
 
-                                val usersCounters: NamedCountersCollection,
-                                // could specific users have bad response trends?
-                                val userResponseStatusCounter: NamedCountersHypercollection,
-
-                                val statusCounters: NamedCountersCollection,
-                                val bytesCounter: Long
-                              ) {
-    val timeSpan: Long = latestTimestamp - earliestTimestamp
-
-
+                                    statusCounters: NamedCountersCollection,
+                                    bytesCounter: Long
+                                   ) {
     def +(that: DebugAggregatedMetrics): DebugAggregatedMetrics = {
-      val newEventCount = this.eventCount + that.eventCount
-      val newEarliestTimestamp = min(this.earliestTimestamp, that.earliestTimestamp)
-      val newLatestTimestamp = max(this.latestTimestamp, that.latestTimestamp)
+      val newBaseAggMetrics = this.baseAggregatedMetrics + that.baseAggregatedMetrics
 
       val newHttpMethodsCounters = this.httpMethodsCounters unionWith that.httpMethodsCounters
       val newHttpMethodResponseStatusCounters = this.httpMethodResponseStatusCounters unionWith that.httpMethodResponseStatusCounters
@@ -112,7 +81,6 @@ object AggregatedMetrics {
       val newHostsCounters = this.hostsCounters unionWith that.hostsCounters
       val newHostResponseStatusCounters = this.hostResponseStatusCounters unionWith that.hostResponseStatusCounters
 
-      val newSectionsCounters = this.sectionsCounters unionWith that.sectionsCounters
       val newSectionResponseStatusCounters = this.sectionResponseStatusCounters unionWith that.sectionResponseStatusCounters
 
       val newUsersCounters = this.usersCounters unionWith that.usersCounters
@@ -121,13 +89,15 @@ object AggregatedMetrics {
       val newStatusCounters = this.statusCounters unionWith that.statusCounters
       val newBytesCounter = this.bytesCounter + that.bytesCounter
 
-      new DebugAggregatedMetrics(newEventCount, newEarliestTimestamp, newLatestTimestamp, newHttpMethodsCounters,
-        newHttpMethodResponseStatusCounters, newHostsCounters, newHostResponseStatusCounters, newSectionsCounters,
-        newSectionResponseStatusCounters, newUsersCounters, newUserResponseStatusCounters, newStatusCounters, newBytesCounter)
+      DebugAggregatedMetrics(newBaseAggMetrics,
+        newHttpMethodsCounters, newHttpMethodResponseStatusCounters,
+        newHostsCounters, newHostResponseStatusCounters,
+        newSectionResponseStatusCounters,
+        newUsersCounters, newUserResponseStatusCounters,
+        newStatusCounters, newBytesCounter)
     }
 
-    def truncate: TruncatedAggregatedMetrics =
-      new TruncatedAggregatedMetrics(this.eventCount, this.earliestTimestamp, this.latestTimestamp, this.sectionsCounters)
+    def truncate: BaseAggregatedMetrics = this.baseAggregatedMetrics
   }
 
 }

@@ -1,6 +1,6 @@
 package com.joeybaruch.datamodel
 
-import com.joeybaruch.datamodel.AggregatedMetrics.DebugAggregatedMetrics
+import com.joeybaruch.datamodel.AggregatedMetrics.{BaseAggregatedMetrics, DebugAggregatedMetrics}
 
 sealed trait LogLine {}
 
@@ -8,19 +8,31 @@ case class Headers(headers: List[String]) extends LogLine
 
 case class Request(method: String, endpoint: String, section: Option[String] = None, protocol: String)
 
-case class LogEvent(host: String,
-                    rfc931: String,
-                    authUser: String,
-                    timestamp: Long,
-                    request: Request,
-                    status: String,
-                    bytes: Int) extends LogLine with Ordered[LogEvent] {
+
+sealed trait LogEvent extends LogLine with Ordered[LogEvent] {
+  val host: String
+  val rfc931: String
+  val authUser: String
+  val timestamp: Long
+  val request: Request
+  val status: String
+  val bytes: Int
+
+  def as[T](implicit f: LogEvent => T): T = f(this)
 
   // negating the compareTo result of two positive numbers will result in ascending order - which we need for oldest first
   override def compare(that: LogEvent): Int = -this.timestamp.compareTo(that.timestamp)
 
-  def as[T](implicit f: LogEvent => T): T = f(this)
 }
+
+
+case class LogEventImpl(host: String,
+                        rfc931: String,
+                        authUser: String,
+                        timestamp: Long,
+                        request: Request,
+                        status: String,
+                        bytes: Int) extends LogEvent
 
 object LogEvent {
   implicit def mapToDebugAggregatedMetric(event: LogEvent): DebugAggregatedMetrics = {
@@ -34,13 +46,30 @@ object LogEvent {
     val oneSectionWithStatus = event.request.section.fold(Map.empty[String, Map[String, Long]])(section => Map(section -> oneStatus))
     val oneUserWithStatus = Map(event.authUser -> oneStatus)
 
-    new DebugAggregatedMetrics(1L, event.timestamp, event.timestamp,
+    val baseAggMetrics = BaseAggregatedMetrics(1L, event.timestamp, event.timestamp, oneSection)
+
+    DebugAggregatedMetrics(baseAggMetrics,
       oneHttpMethod, oneHttpMethodWithStatus,
       oneHost, oneHostWithStatus,
-      oneSection, oneSectionWithStatus,
+      oneSectionWithStatus,
       oneUser, oneUserWithStatus,
       oneStatus, event.bytes)
   }
+
+
+  case object SentinelEOFEvent extends LogEvent {
+    //todo: review this paradigm for later pattern matching vs implementing unnecessary functions
+    private val emptyStr = ""
+    private val emptyReq = Request(emptyStr, emptyStr, None, emptyStr)
+    override val host: String = emptyStr
+    override val rfc931: String = emptyStr
+    override val authUser: String = emptyStr
+    override val timestamp: Long = 0L
+    override val request: Request = emptyReq
+    override val status: String = emptyStr
+    override val bytes: Int = 0
+  }
+
 }
 
 case class UnparsableEvent(string: Seq[String]) extends LogLine
