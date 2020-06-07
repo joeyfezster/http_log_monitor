@@ -22,13 +22,13 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
   before {
     config = ConfigFactory.load()
     eventFlowAligner = new EventFlowAligner(config)
-    allowedDelay = config.getInt("windowing.late-data.delay-allowed.seconds").seconds.toMillis
+    allowedDelay = config.getInt("windowing.late-data.delay-allowed.seconds").seconds.toSeconds
     minUnalowedDelay = allowedDelay + 1
   }
 
   behavior of "timeAligned"
   it should "output events in order" in {
-    val unOrderedInputData = addTriggeringEvent(unorderedEventSequenceWith3SecMaxLateness, minUnalowedDelay)
+    val unOrderedInputData = addTriggeringEvent(unorderedEventSequenceWith3SecMaxLateness)
     val orderedExpectedOutput = unorderedEventSequenceWith3SecMaxLateness.sortBy(_.timestamp)
 
     val flowUnderTest = eventFlowAligner.timeAligned
@@ -40,7 +40,7 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
 
   it should "discard late data" in {
     var eventSequenceWithLateData = orderedEventSequence :+ addOffsetToEvent(orderedEventSequence.last, minUnalowedDelay)
-    eventSequenceWithLateData = addTriggeringEvent(eventSequenceWithLateData, minUnalowedDelay)
+    eventSequenceWithLateData = addTriggeringEvent(eventSequenceWithLateData)
 
     val flowUnderTest = eventFlowAligner.timeAligned
     val future = Source(eventSequenceWithLateData).via(flowUnderTest).runWith(Sink.seq)
@@ -49,11 +49,11 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     result should contain theSameElementsInOrderAs orderedEventSequence
   }
 
-  lazy val logEvent1: LogEvent = LogEvent("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
-  lazy val logEvent2: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
-  lazy val logEvent3: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573862, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
-  lazy val logEvent4: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573863, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
-  lazy val latestEvent: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573864, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
+  lazy val logEvent1: LogEvent = LogEvent("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val logEvent2: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val logEvent3: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573862, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val logEvent4: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573863, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val latestEvent: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573864, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
 
   def addOffsetToEvent(event: LogEvent, offset: Long) = {
     val timesamp = event.timestamp - offset
@@ -64,9 +64,9 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     LogEvent(event.host, event.rfc931, event.authUser, timesamp, event.request, event.status, event.bytes)
   }
 
-  def addTriggeringEvent(seq: Seq[LogEvent], timeDelay: Long): Seq[LogEvent] = {
+  def addTriggeringEvent(seq: Seq[LogEvent]): Seq[LogEvent] = {
     val latestEvent = seq.maxBy(_.timestamp)
-    seq :+ addOffsetToEvent(latestEvent, -timeDelay)
+    seq :+ addOffsetToEvent(latestEvent, -minUnalowedDelay)
   }
 
   lazy val orderedEventSequence = Seq(logEvent1, logEvent2, logEvent3, logEvent4, latestEvent)

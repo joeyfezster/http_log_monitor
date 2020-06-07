@@ -65,6 +65,6 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
 
   lazy val smallSampleFile: String = Paths.get(getClass.getResource("/sample/small_sample_csv.txt").toURI).toString
   lazy val smallSampleWithSomeBadLogs: String = Paths.get(getClass.getResource("/sample/small_sample_bad_csv.txt").toURI).toString
-  lazy val logEvent1: LogEvent = LogEvent("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
-  lazy val logEvent2: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), 200, 1234)
+  lazy val logEvent1: LogEvent = LogEvent("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("/api"), "HTTP/1.0"), "200", 1234)
+  lazy val logEvent2: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("/api"), "HTTP/1.0"), "200", 1234)
 }
