@@ -4,7 +4,8 @@ import java.nio.file.Paths
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
-import com.joeybaruch.datamodel.{LogEvent, Request}
+import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
+import com.joeybaruch.datamodel.{LogEvent, LogEventImpl, Request}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.BeforeAndAfter
@@ -33,14 +34,14 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
   it should "parse a file with log events" in {
     val result = runParseForFile(smallSampleFile)
 
-    assert(result == Seq(logEvent1, logEvent2))
+    result should contain theSameElementsInOrderAs  fileParseResults
   }
 
 
   it should "parse a file with some bad log events" in {
     val result = runParseForFile(smallSampleWithSomeBadLogs)
 
-    assert((result == Seq(logEvent1, logEvent2)))
+    result should contain theSameElementsInOrderAs  fileParseResults
   }
 
   behavior of "Implicit Ordering of LogEvents"
@@ -51,7 +52,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
     q.addAll(logs)
 
     val result = q.dequeueAll
-    result should be(Seq(logEvent1, logEvent2))
+    result should contain theSameElementsInOrderAs logs.sortBy(_.timestamp)
   }
 
 
@@ -65,6 +66,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
 
   lazy val smallSampleFile: String = Paths.get(getClass.getResource("/sample/small_sample_csv.txt").toURI).toString
   lazy val smallSampleWithSomeBadLogs: String = Paths.get(getClass.getResource("/sample/small_sample_bad_csv.txt").toURI).toString
-  lazy val logEvent1: LogEvent = LogEvent("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("/api"), "HTTP/1.0"), "200", 1234)
-  lazy val logEvent2: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("/api"), "HTTP/1.0"), "200", 1234)
+  lazy val logEvent1: LogEvent = LogEventImpl("10.0.0.2", "-", "apache", 1549573860, Request("get", "/api/user", Some("/api"), "http/1.0"), "200", 1234)
+  lazy val logEvent2: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573861, Request("get", "/api/user", Some("/api"), "http/1.0"), "200", 1234)
+  private val fileParseResults = Seq(logEvent1, logEvent2, SentinelEOFEvent)
 }

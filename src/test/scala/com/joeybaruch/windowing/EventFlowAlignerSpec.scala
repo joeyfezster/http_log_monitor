@@ -2,7 +2,8 @@ package com.joeybaruch.windowing
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
-import com.joeybaruch.datamodel.{LogEvent, Request}
+import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
+import com.joeybaruch.datamodel.{LogEvent, LogEventImpl, Request}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -49,11 +50,11 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     result should contain theSameElementsInOrderAs orderedEventSequence
   }
 
-  lazy val logEvent1: LogEvent = LogEvent("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val logEvent2: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val logEvent3: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573862, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val logEvent4: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573863, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val latestEvent: LogEvent = LogEvent("10.0.0.4", "-", "apache", 1549573864, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val LogEvent1= LogEventImpl("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val LogEvent2: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val LogEvent3: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573862, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val LogEvent4: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573863, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
+  lazy val latestEvent: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573864, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
 
   def addOffsetToEvent(event: LogEvent, offset: Long) = {
     val timesamp = event.timestamp - offset
@@ -61,15 +62,12 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
   }
 
   private def getEventWithTimestamp(event: LogEvent, timesamp: Long) = {
-    LogEvent(event.host, event.rfc931, event.authUser, timesamp, event.request, event.status, event.bytes)
+    LogEventImpl(event.host, event.rfc931, event.authUser, timesamp, event.request, event.status, event.bytes)
   }
 
-  def addTriggeringEvent(seq: Seq[LogEvent]): Seq[LogEvent] = {
-    val latestEvent = seq.maxBy(_.timestamp)
-    seq :+ addOffsetToEvent(latestEvent, -minUnalowedDelay)
-  }
+  def addTriggeringEvent(seq: Seq[LogEvent]): Seq[LogEvent] = seq :+ SentinelEOFEvent
 
-  lazy val orderedEventSequence = Seq(logEvent1, logEvent2, logEvent3, logEvent4, latestEvent)
-  lazy val unorderedEventSequenceWith3SecMaxLateness = Seq(logEvent3, logEvent1, logEvent4, latestEvent, logEvent2)
+  lazy val orderedEventSequence = Seq(LogEvent1, LogEvent2, LogEvent3, LogEvent4, latestEvent)
+  lazy val unorderedEventSequenceWith3SecMaxLateness = Seq(LogEvent3, LogEvent1, LogEvent4, latestEvent, LogEvent2)
 
 }

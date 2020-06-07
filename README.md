@@ -9,7 +9,7 @@
 1. The system is to report metrics for every 10 second batch (event time)
 rather than report every x seconds for the aggregation of the past 10. 
 In other words, reports occur for each mutually exclusive 10 second batch of events. 
-1. 
+1. Timestamps are in seconds, not milliseconds
 
 ## System Design
 

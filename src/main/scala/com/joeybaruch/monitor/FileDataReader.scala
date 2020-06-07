@@ -8,22 +8,20 @@ import akka.actor.ActorSystem
 import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.scaladsl.{Flow, Source, StreamConverters}
 import akka.util.ByteString
+import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
 import com.joeybaruch.datamodel.{LogEvent, LogLine}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.collection.mutable
-
 class FileDataReader(config: Config, parser: LogParser)
                     (implicit system: ActorSystem) extends LazyLogging {
-
 
   def processFile(filepath: String): Source[LogEvent, NotUsed] = {
     logger.info(s"processing file: $filepath")
     val file = Paths.get(filepath).toFile
     Source(Seq(file))
       .via(processSingleFile)
-  }
+  }.concat(Source.single(SentinelEOFEvent))
 
   lazy val processSingleFile: Flow[File, LogEvent, NotUsed] =
     Flow[File]

@@ -3,7 +3,8 @@ package com.joeybaruch.windowing
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.datamodel.LogEvent
+import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
+import com.joeybaruch.datamodel.{LogEvent, LogEventImpl}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
@@ -14,16 +15,18 @@ class EventFlowAligner(config: Config)(implicit system: ActorSystem) extends Laz
 
   //todo: move to object so I don't have to instantiate the class - what about configs?
   val timeAligned: Flow[LogEvent, LogEvent, NotUsed] = {
-    //todo: potential solution for last batch not emitted - source sends dummy event that moves time ahead
     Flow[LogEvent]
       .statefulMapConcat { () =>
         val state = new MapConcatState
         val methods = new QueueMethods(state)
 
         event => {
-//          logger.debug(s"stateful event processing $event")
-          methods.enqueueEvent(event)
-          methods.dequeWatermarkedEvents(Seq())
+          event match {
+            case SentinelEOFEvent => methods.flushQueue()
+            case _: LogEventImpl =>
+              methods.enqueueEvent(event)
+              methods.dequeWatermarkedEvents(Seq())
+          }
         }
       }
   }
@@ -45,7 +48,7 @@ class EventFlowAligner(config: Config)(implicit system: ActorSystem) extends Laz
     def enqueueEvent(event: LogEvent): Unit = {
       if (isOlderThanWatermark(event)) logger.info(s"a log event arrived after allowed delay $event")
       else {
-//        logger.debug(s"enqueuing event $event")// todo  - put this back
+        logger.debug(s"enqueuing event $event")
         if (state.latestSeenTimestamp < event.timestamp) {
           logger.debug(s"updated latest seen from ${state.latestSeenTimestamp} to ${event.timestamp}")
           state.latestSeenTimestamp = event.timestamp
@@ -66,6 +69,8 @@ class EventFlowAligner(config: Config)(implicit system: ActorSystem) extends Laz
           agg
       }
     }
+
+    def flushQueue(): Seq[LogEvent] = state.oldestEventFirstQueue.dequeueAll
   }
 
 }
