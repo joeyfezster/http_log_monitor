@@ -1,6 +1,6 @@
 package com.joeybaruch.datamodel
 
-import com.joeybaruch.datamodel.AggregatedMetrics.{BaseAggregatedMetrics, DebugAggregatedMetrics}
+import com.joeybaruch.datamodel.AggregatedMetrics.{BaseAggMetrics, DebugAggMetrics}
 
 sealed trait LogLine {}
 
@@ -35,7 +35,7 @@ case class LogEventImpl(host: String,
                         bytes: Int) extends LogEvent
 
 object LogEvent {
-  implicit def mapToDebugAggregatedMetric(event: LogEvent): DebugAggregatedMetrics = {
+  implicit def mapToDebugAggregatedMetric(event: LogEvent): DebugAggMetrics = {
     val oneStatus = Map(event.status -> 1L)
     val oneHttpMethod = Map(event.request.method -> 1L)
     val oneHttpMethodWithStatus = Map(event.request.method -> oneStatus)
@@ -46,9 +46,9 @@ object LogEvent {
     val oneSectionWithStatus = event.request.section.fold(Map.empty[String, Map[String, Long]])(section => Map(section -> oneStatus))
     val oneUserWithStatus = Map(event.authUser -> oneStatus)
 
-    val baseAggMetrics = BaseAggregatedMetrics(1L, event.timestamp, event.timestamp, oneSection)
+    val baseAggMetrics = BaseAggMetrics(1L, event.timestamp, event.timestamp, oneSection)
 
-    DebugAggregatedMetrics(baseAggMetrics,
+    DebugAggMetrics(baseAggMetrics,
       oneHttpMethod, oneHttpMethodWithStatus,
       oneHost, oneHostWithStatus,
       oneSectionWithStatus,
@@ -56,9 +56,13 @@ object LogEvent {
       oneStatus, event.bytes)
   }
 
+    implicit def mapToBaseAggregatedMetric(event: LogEvent): BaseAggMetrics = {
+      mapToDebugAggregatedMetric(event).truncate
+    }
+
 
   case object SentinelEOFEvent extends LogEvent {
-    //todo: review this paradigm for later pattern matching vs implementing unnecessary functions
+    //todo: review this paradigm - pattern matching vs implementing unnecessary functions
     private val emptyStr = ""
     private val emptyReq = Request(emptyStr, emptyStr, None, emptyStr)
     override val host: String = emptyStr

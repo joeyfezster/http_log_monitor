@@ -10,7 +10,7 @@ class ColumnarLogParser(config: Config) extends LogParser with LazyLogging {
     logger.debug(s"parsing $columns")
 
     import scala.jdk.CollectionConverters._
-    val headers = config.getList("schema.legal-headers").asScala.map(_.unwrapped().toString).toList
+    val headers: List[String] = config.getList("schema.legal-headers").asScala.map(_.unwrapped().toString).toList
 
     columns match {
       case _  if columns == headers =>
