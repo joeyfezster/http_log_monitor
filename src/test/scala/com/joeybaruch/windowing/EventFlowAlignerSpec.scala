@@ -16,13 +16,12 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
 
   implicit val system: ActorSystem = ActorSystem()
   var config: Config = _
-  var eventFlowAligner: EventFlowAligner = _
+  var eventFlowAligner = EventFlowAligner
   var allowedDelay: Long = _
   var minUnalowedDelay: Long = _
 
   before {
     config = ConfigFactory.load()
-    eventFlowAligner = new EventFlowAligner(config)
     allowedDelay = config.getInt("windowing.late-data.delay-allowed.seconds").seconds.toSeconds
     minUnalowedDelay = allowedDelay + 1
   }
@@ -32,7 +31,7 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     val unOrderedInputData = addTriggeringEvent(unorderedEventSequenceWith3SecMaxLateness)
     val orderedExpectedOutput = unorderedEventSequenceWith3SecMaxLateness.sortBy(_.timestamp)
 
-    val flowUnderTest = eventFlowAligner.timeAligned
+    val flowUnderTest = eventFlowAligner.timeAligned(config)
     val future = Source(unOrderedInputData).via(flowUnderTest).runWith(Sink.seq)
     val result = Await.result(future, 3.seconds)
 
@@ -43,7 +42,7 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     var eventSequenceWithLateData = orderedEventSequence :+ addOffsetToEvent(orderedEventSequence.last, minUnalowedDelay)
     eventSequenceWithLateData = addTriggeringEvent(eventSequenceWithLateData)
 
-    val flowUnderTest = eventFlowAligner.timeAligned
+    val flowUnderTest = eventFlowAligner.timeAligned(config)
     val future = Source(eventSequenceWithLateData).via(flowUnderTest).runWith(Sink.seq)
 
     val result = Await.result(future, 3.seconds)

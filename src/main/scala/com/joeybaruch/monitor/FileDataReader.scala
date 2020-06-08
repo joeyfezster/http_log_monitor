@@ -16,31 +16,31 @@ import com.typesafe.scalalogging.LazyLogging
 class FileDataReader(config: Config, parser: LogParser)
                     (implicit system: ActorSystem) extends LazyLogging {
 
-  def processFile(filepath: String): Source[LogEvent, NotUsed] = {
+  def fileSource(filepath: String): Source[LogEvent, NotUsed] = {
     logger.info(s"processing file: $filepath")
     val file = Paths.get(filepath).toFile
     Source(Seq(file))
       .via(processSingleFile)
   }.concat(Source.single(SentinelEOFEvent))
 
-  lazy val processSingleFile: Flow[File, LogEvent, NotUsed] =
+  private lazy val processSingleFile: Flow[File, LogEvent, NotUsed] =
     Flow[File]
       .via(parseFile)
       .via(collectLogEvents)
 
-  val parseFile: Flow[File, LogLine, NotUsed] =
+  private lazy val parseFile: Flow[File, LogLine, NotUsed] =
     Flow[File].flatMapConcat { file =>
       val fileInputStream = new FileInputStream(file)
 
       StreamConverters.fromInputStream(() => fileInputStream)
-        .via(csvParser)
+        .via(csvScanner)
         .map(parseLine(file.getPath))
     }
 
-  val collectLogEvents: Flow[LogLine, LogEvent, NotUsed] =
+  private lazy val collectLogEvents: Flow[LogLine, LogEvent, NotUsed] =
     Flow[LogLine].collect { case logEvent: LogEvent => logEvent }
 
-  val csvParser: Flow[ByteString, List[String], NotUsed] =
+  private lazy val csvScanner: Flow[ByteString, List[String], NotUsed] =
     CsvParsing.lineScanner(delimiter = ',', quoteChar = '"', escapeChar = ' ')
       .map(byteStringList => byteStringList.map(_.utf8String))
 

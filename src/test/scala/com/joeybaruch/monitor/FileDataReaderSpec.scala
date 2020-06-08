@@ -57,7 +57,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
 
 
   private def runParseForFile(filename: String): Seq[LogEvent] = {
-    val sourceUnderTest = new FileDataReader(config, new ColumnarLogParser(config)).processFile(filename)
+    val sourceUnderTest = new FileDataReader(config, new ColumnarLogParser(config)).fileSource(filename)
 
     val future = sourceUnderTest.take(10).runWith(Sink.seq)
     val result = Await.result(future, 3.seconds)
