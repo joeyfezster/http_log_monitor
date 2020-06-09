@@ -2,8 +2,9 @@ package com.joeybaruch.windowing
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
+import com.joeybaruch.TestUtils._
 import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
-import com.joeybaruch.datamodel.{LogEvent, LogEventImpl, Request}
+import com.joeybaruch.datamodel.{LogEvent, LogEventImpl}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -16,12 +17,11 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
 
   implicit val system: ActorSystem = ActorSystem()
   var config: Config = _
-  var eventFlowAligner = EventFlowAligner
   var allowedDelay: Long = _
   var minUnalowedDelay: Long = _
 
   before {
-    config = ConfigFactory.load()
+    config = ConfigFactory.load("test-conf")
     allowedDelay = config.getInt("windowing.late-data.delay-allowed.seconds").seconds.toSeconds
     minUnalowedDelay = allowedDelay + 1
   }
@@ -31,7 +31,7 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     val unOrderedInputData = addTriggeringEvent(unorderedEventSequenceWith3SecMaxLateness)
     val orderedExpectedOutput = unorderedEventSequenceWith3SecMaxLateness.sortBy(_.timestamp)
 
-    val flowUnderTest = eventFlowAligner.timeAligned(config)
+    val flowUnderTest = EventFlowAligner.timeAligned(config)
     val future = Source(unOrderedInputData).via(flowUnderTest).runWith(Sink.seq)
     val result = Await.result(future, 3.seconds)
 
@@ -42,31 +42,26 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
     var eventSequenceWithLateData = orderedEventSequence :+ addOffsetToEvent(orderedEventSequence.last, minUnalowedDelay)
     eventSequenceWithLateData = addTriggeringEvent(eventSequenceWithLateData)
 
-    val flowUnderTest = eventFlowAligner.timeAligned(config)
+    val flowUnderTest = EventFlowAligner.timeAligned(config)
     val future = Source(eventSequenceWithLateData).via(flowUnderTest).runWith(Sink.seq)
 
     val result = Await.result(future, 3.seconds)
     result should contain theSameElementsInOrderAs orderedEventSequence
   }
 
-  lazy val LogEvent1= LogEventImpl("10.0.0.2", "-", "apache", 1549573860, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val LogEvent2: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573861, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val LogEvent3: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573862, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val LogEvent4: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573863, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
-  lazy val latestEvent: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573864, Request("GET", "/api/user", Some("user"), "HTTP/1.0"), "200", 1234)
 
   def addOffsetToEvent(event: LogEvent, offset: Long) = {
     val timesamp = event.timestamp - offset
-    getEventWithTimestamp(event, timesamp)
+    copyEventWithNewTimestamp(event, timesamp)
   }
 
-  private def getEventWithTimestamp(event: LogEvent, timesamp: Long) = {
+  private def copyEventWithNewTimestamp(event: LogEvent, timesamp: Long) = {
     LogEventImpl(event.host, event.rfc931, event.authUser, timesamp, event.request, event.status, event.bytes)
   }
 
   def addTriggeringEvent(seq: Seq[LogEvent]): Seq[LogEvent] = seq :+ SentinelEOFEvent
 
-  lazy val orderedEventSequence = Seq(LogEvent1, LogEvent2, LogEvent3, LogEvent4, latestEvent)
-  lazy val unorderedEventSequenceWith3SecMaxLateness = Seq(LogEvent3, LogEvent1, LogEvent4, latestEvent, LogEvent2)
+  lazy val orderedEventSequence = Seq(logEvent1, logEvent2, logEvent3, logEvent4, logEvent5)
+  lazy val unorderedEventSequenceWith3SecMaxLateness = Seq(logEvent3, logEvent1, logEvent4, logEvent5, logEvent2)
 
 }

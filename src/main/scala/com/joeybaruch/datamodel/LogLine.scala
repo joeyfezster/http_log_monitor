@@ -1,6 +1,6 @@
 package com.joeybaruch.datamodel
 
-import com.joeybaruch.datamodel.AggregatedMetrics.{BaseAggMetrics, DebugAggMetrics}
+import com.joeybaruch.datamodel.AggregatedMetrics.{BaseAggMetrics, AggMetrics}
 
 sealed trait LogLine {}
 
@@ -35,7 +35,7 @@ case class LogEventImpl(host: String,
                         bytes: Int) extends LogEvent
 
 object LogEvent {
-  implicit def mapToDebugAggregatedMetric(event: LogEvent): DebugAggMetrics = {
+  implicit def mapToAggMetric(event: LogEvent): AggMetrics = {
     val oneStatus = Map(event.status -> 1L)
     val oneHttpMethod = Map(event.request.method -> 1L)
     val oneHttpMethodWithStatus = Map(event.request.method -> oneStatus)
@@ -48,7 +48,7 @@ object LogEvent {
 
     val baseAggMetrics = BaseAggMetrics(1L, event.timestamp, event.timestamp)
 
-    DebugAggMetrics(baseAggMetrics,
+    AggMetrics(baseAggMetrics,
       oneHttpMethod, oneHttpMethodWithStatus,
       oneHost, oneHostWithStatus,
       oneSection, oneSectionWithStatus,
@@ -57,7 +57,7 @@ object LogEvent {
   }
 
     implicit def mapToBaseAggregatedMetric(event: LogEvent): BaseAggMetrics = {
-      mapToDebugAggregatedMetric(event).truncate
+      mapToAggMetric(event).truncate
     }
 
 

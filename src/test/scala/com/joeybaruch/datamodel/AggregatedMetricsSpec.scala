@@ -12,22 +12,22 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   behavior of "AggregatedMetricsMonoid"
 
   it should "aggregate via the monoid abstraction" in {
-    AggregatedMetrics.aggregate(Seq(b1, b2)) should equal(b1PlusB2)
-    AggregatedMetrics.aggregate(Seq(db1, db2)) should equal(db1Plus2)
+    AggregatedMetrics.aggregate(Seq(bag1, bag2)) should equal(bag1Plus2)
+    AggregatedMetrics.aggregate(Seq(full1, full2)) should equal(full1Plus2)
   }
 
   behavior of "AggregatedMetricsObject"
 
   it should "aggregate base metrics correctly" in {
-    b1 + b2 should equal(b1PlusB2)
+    bag1 + bag2 should equal(bag1Plus2)
   }
 
-  it should "aggregate debug metrics correctly" in {
-    db1 + db2 should equal(db1Plus2)
+  it should "aggregate full metrics correctly" in {
+    full1 + full2 should equal(full1Plus2)
   }
 
   it should "truncate the superset into the subset" in {
-    db1.truncate should equal(b1)
+    full1.truncate should equal(bag1)
   }
 
 
@@ -53,9 +53,9 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   private lazy val twoSection1 = Map("s1" -> 2L)
   private lazy val oneSection2 = Map("s2" -> 1L)
 
-  lazy val b1: BaseAggMetrics = BaseAggMetrics(1, 1L, 1L)
-  lazy val b2: BaseAggMetrics = BaseAggMetrics(1, 2L, 2L)
-  lazy val b1PlusB2: BaseAggMetrics = BaseAggMetrics(2, 1L, 2L)
+  lazy val bag1: BaseAggMetrics = BaseAggMetrics(1, 1L, 1L)
+  lazy val bag2: BaseAggMetrics = BaseAggMetrics(1, 2L, 2L)
+  lazy val bag1Plus2: BaseAggMetrics = BaseAggMetrics(2, 1L, 2L)
 
   private lazy val oneGet = Map("get" -> 1L)
   private lazy val onePut = Map("put" -> 1L)
@@ -80,19 +80,19 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   private lazy val oneUser1WithOneOk = Map("u1" -> oneOkStatus)
   private lazy val oneUser1WithOneNotFound = Map("u1" -> oneNotFoundStatus)
 
-  lazy val db1: DebugAggMetrics = DebugAggMetrics(b1,
+  lazy val full1: AggMetrics = AggMetrics(bag1,
     oneGet, getWithOneOk,
     oneHost1, host1WithOneOk,
     oneSection1, section1WithOneOk,
     oneUser1, oneUser1WithOneOk,
     oneOkStatus, 10L)
-  lazy val db2: DebugAggMetrics = DebugAggMetrics(b2,
+  lazy val full2: AggMetrics = AggMetrics(bag2,
     onePut, putWithOneNotFound,
     oneHost1, host1WithOneNotFound,
     oneSection1, section1WithOneNotFound,
     oneUser1, oneUser1WithOneNotFound,
     oneNotFoundStatus, 10L)
-  lazy val db1Plus2: DebugAggMetrics = DebugAggMetrics(b1PlusB2,
+  lazy val full1Plus2: AggMetrics = AggMetrics(bag1Plus2,
     oneGet ++ onePut, Map("get" -> oneOkStatus, "put" -> oneNotFoundStatus),
     twoHost1, Map("h1" -> oneOkOneNotFound),
     twoSection1, Map("s1" -> oneOkOneNotFound),

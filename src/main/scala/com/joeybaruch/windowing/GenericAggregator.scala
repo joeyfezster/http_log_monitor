@@ -3,59 +3,41 @@ package com.joeybaruch.windowing
 import akka.stream.contrib.AccumulateWhileUnchanged
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.{Done, NotUsed}
-import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
+import com.joeybaruch.alerts.ObservedAlertQueue
+import com.joeybaruch.datamodel.AggregatedMetrics.AggMetrics
 import com.joeybaruch.datamodel.{AggregatedMetrics, LogEvent}
 
 import scala.concurrent.Future
 
 object GenericAggregator {
-  val timeSpan = 10L
 
-//  def oneSecondAggregator[T](transform: LogEvent => T, aggregate: Seq[T] => T): Flow[LogEvent, T, NotUsed] =
-//    Flow[LogEvent]
-//      .via(AccumulateWhileUnchanged(le => le.timestamp))
-//      .map(logEventSequence => logEventSequence.map(transform))
-//      .map(aggregate)
-
-
-  def oneSecondAggregator: Flow[LogEvent, BaseAggMetrics, NotUsed] = {
+  def oneSecondAggregator: Flow[LogEvent, AggMetrics, NotUsed] = {
     import AggregatedMetrics._
+
+    def isOneSecond(dag: AggMetrics) = {
+      dag.baseAggregatedMetrics.earliestTimestamp == dag.baseAggregatedMetrics.latestTimestamp
+    }
 
     Flow[LogEvent]
       .via(AccumulateWhileUnchanged[LogEvent, Long](le => le.timestamp))
-      .map { case seq => seq.map(_.as[BaseAggMetrics]) }
-      .map { case seq => AggregatedMetrics.aggregate(seq) }
-    //assert 1 second
+      .map(seq => seq.map(_.as[AggMetrics]))
+      .map(seq => AggregatedMetrics.aggregate(seq))
+      .map(dag => {
+        assert(isOneSecond(dag))
+        dag
+      })
   }
 
-  def alertingSink(alert: BaseAggMetrics => Unit): Sink[BaseAggMetrics, Future[Done]] = {
-    Flow[BaseAggMetrics] //assumes that each BAG represents one second worth of events
+  def alertingSink(observedAlertQueue: ObservedAlertQueue): Sink[AggMetrics, Future[Done]] = {
+    Flow[AggMetrics] //assumes that each BAG represents one second worth of events
+      .map(dag => dag.truncate)
       .statefulMapConcat { () =>
-        val state = new MapConcatState(alert)
-        val methods = new MapConcatMethods(state)
-
         element => {
-          methods.enQ(element)
+          observedAlertQueue.enQ(element)
+          Seq()
         }
       }.toMat(Sink.ignore)(Keep.right)
   }
-  //  def box(transform: LogEvent => ) :Sink[BaseAggMetrics,Future[Done]] =
-  //    oneSecondAggregator(transform, aggregate)
 
-  final class MapConcatState(alert: BaseAggMetrics => Unit){
-    val queue = ???
-  }
-
-  final private class MapConcatMethods(state: MapConcatState){
-    def enQ(element: BaseAggMetrics) = ???
-
-    private def deQ = ???
-
-    private def mustAlert: Boolean = ???
-
-    private def mustRecover: Boolean = ???
-
-
-  }
 
 }
