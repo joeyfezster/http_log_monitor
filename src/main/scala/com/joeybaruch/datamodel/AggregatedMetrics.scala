@@ -1,6 +1,9 @@
 package com.joeybaruch.datamodel
 
+import com.typesafe.config.ConfigFactory
+
 import scala.math.{max, min}
+import scala.util.Try
 
 
 object AggregatedMetrics {
@@ -44,12 +47,14 @@ object AggregatedMetrics {
 
 
   /** *************     Light and heavy (base & full) containers for metrics        **************/
+  // todo: rename this to window with element counter or something - and then all the "bag"
+  // todo: then separate this from metrics
   case class BaseAggMetrics(/** ****** window info *********/
                             eventCount: Long,
                             earliestTimestamp: Long,
                             latestTimestamp: Long) {
 
-    val timeSpan: Long = latestTimestamp - earliestTimestamp
+    val timeSpan: Long = latestTimestamp - earliestTimestamp + 1
 
 
     def +(that: BaseAggMetrics): BaseAggMetrics = {
@@ -84,9 +89,9 @@ object AggregatedMetrics {
 
                         statusCounters: NamedCountersCollection,
                         bytesCounter: Long
-                            ) {
+                       ) {
     def +(that: AggMetrics): AggMetrics = {
-      val newBaseAggMetrics = (this.baseAggregatedMetrics + that.baseAggregatedMetrics)
+      val newBaseAggMetrics = this.baseAggregatedMetrics + that.baseAggregatedMetrics
 
       val newHttpMethodsCounters = this.httpMethodsCounters unionWith that.httpMethodsCounters
       val newHttpMethodResponseStatusCounters = this.httpMethodResponseStatusCounters unionWith that.httpMethodResponseStatusCounters
@@ -112,8 +117,56 @@ object AggregatedMetrics {
     }
 
     def truncate: BaseAggMetrics = this.baseAggregatedMetrics
+
+
+    def debugStats: String = {
+      val span = baseAggregatedMetrics.timeSpan
+      s"    ------  Debug Stats   ----------" +
+        f"\n\tTotal bytes for period: ${bytesCounter}\t ${bytesCounter.toDouble / span}%.2f/sec" +
+        s"\n\tCalls by return status: ${printNCC(statusCounters, span)}" +
+        s"\n\tSection calls by response status: ${printNCHC(sectionResponseStatusCounters, span)} " +
+        s"\n\tCalls by Http method: ${printNCC(httpMethodsCounters, span)}" +
+        s"\n\tCalls by Http method by response status: ${printNCHC(httpMethodResponseStatusCounters, span)} " +
+        s"\n\tCalls by user: ${printNCC(usersCounters, span)}" +
+        s"\n\tCalls by user by response status: ${printNCHC(userResponseStatusCounter, span)} " +
+        s"\n\tCalls by hosts: ${printNCC(hostsCounters, span)}" +
+        s"\n\tCalls by hosts by response status: ${printNCHC(hostResponseStatusCounters, span)} "
+    }
+
+
+    private val default3: Int = 3
+    private val showDebugStats: Boolean = Try(ConfigFactory.load().getBoolean("show-debug-stats")).getOrElse(true)
+    private val topN: Int = Try(ConfigFactory.load().getInt("top-sections-to-show")).getOrElse(default3)
+
+
+    def topSections: String = {
+      val descendingSortedSectionsByCount = sectionCounters.toSeq.sortWith(_._2 > _._2)
+      val topNSections = descendingSortedSectionsByCount.take(topN)
+      topNSections.foldLeft("") {
+        case (agg, (name, value)) =>
+          agg.concat(s"\n\t\tsection $name -> with $value calls")
+      }
+    }
+
+    override def toString: String = {
+      val str = s"Metrics for period - ${baseAggregatedMetrics.earliestTimestamp} : ${baseAggregatedMetrics.latestTimestamp} (${baseAggregatedMetrics.timeSpan} seconds):\n" +
+        s"    ------  Quick Stats   ----------" +
+        s"\n\tTotal legal log lines: ${baseAggregatedMetrics.eventCount}" +
+        s"\n\tTop Sections Hit: ${topSections}" +
+        s"\n\tCall rate: ${baseAggregatedMetrics.eventCount.toDouble / baseAggregatedMetrics.timeSpan} calls per second" +
+        s"\n\t"
+
+      if (showDebugStats) str.concat(debugStats) else str
+    }
   }
 
+  private def printNCC(map: NamedCountersCollection, span: Long): String = map.toSeq.foldLeft("") {
+    case (agg, (name, value)) => agg.concat(f"\n\t\t\t\t$name -> $value\t ${value.toDouble / span}%.2f/sec")
+  }
+
+  private def printNCHC(map: NamedCountersHyperCollection, span: Long): String = map.toSeq.foldLeft("") {
+    case (agg, (name, counterCollection)) => agg.concat(s"\n\t\t\t$name :: ${printNCC(counterCollection, span)}")
+  }
 
   // implicit classes lets us define our own methods on existing classes - like unions of Map[String, Long]
   implicit class StringLongMapExtension(val map: Map[String, Long]) {

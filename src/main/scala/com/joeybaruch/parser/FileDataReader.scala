@@ -1,4 +1,4 @@
-package com.joeybaruch.monitor
+package com.joeybaruch.parser
 
 import java.io.{File, FileInputStream}
 import java.nio.file.Paths

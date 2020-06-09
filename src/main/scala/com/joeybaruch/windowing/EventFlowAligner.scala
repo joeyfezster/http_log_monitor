@@ -20,10 +20,10 @@ object EventFlowAligner extends LazyLogging {
 
         event => {
           event match {
-            case SentinelEOFEvent => methods.flushQueue()
             case _: LogEventImpl =>
               methods.enqueueEvent(event)
               methods.dequeWatermarkedEvents(Seq())
+            case SentinelEOFEvent => methods.flushQueue()
           }
         }
       }
