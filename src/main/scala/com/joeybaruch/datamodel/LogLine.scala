@@ -35,6 +35,7 @@ case class LogEventImpl(host: String,
                         bytes: Int) extends LogEvent
 
 object LogEvent {
+  //todo: test this
   implicit def mapToAggMetric(event: LogEvent): AggMetrics = {
     val oneStatus = Map(event.status -> 1L)
     val oneHttpMethod = Map(event.request.method -> 1L)
