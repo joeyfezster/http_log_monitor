@@ -4,12 +4,12 @@ import java.nio.file.Paths
 
 import com.joeybaruch.alerts.AlertQueue
 import com.joeybaruch.alerts.AlertQueue.{Down, Up}
-import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
 import com.joeybaruch.datamodel.{LogEvent, LogEventImpl, Observer, Request}
+import com.joeybaruch.windowing.EventsWindow
 
 object TestUtils {
-  def oneSecWin(ts: Long, ec: Long): BaseAggMetrics = {
-    BaseAggMetrics(ec, ts, ts)
+  def oneSecWin(ts: Long, ec: Long): EventsWindow = {
+    EventsWindow(ec, ts, ts)
   }
 
   def copyEventWithNewTimestamp(event: LogEvent, timestamp: Long): LogEventImpl = {
@@ -26,7 +26,7 @@ object TestUtils {
       }
     }
 
-    def reset(): Unit ={
+    def reset(): Unit = {
       alertIsTriggered = false
       alertIsRecovered = false
     }
@@ -53,6 +53,6 @@ object TestUtils {
   LogEventImpl("10.0.0.4", "-", "apache", 1549573859, Request("get", "/api/help", Some("/api"), "http/1.0"), "200", 1234)
   LogEventImpl("10.0.0.4", "-", "apache", 1549573861, Request("get", "/api/user", Some("/api"), "http/1.0"), "200", 1136)
   LogEventImpl("10.0.0.3", "-", "apache", 1549573860, Request("get", "/report", Some("/report"), "http/1.0"), "200", 1194)
-  LogEventImpl("10.0.0.3", "-", "apache", 1549573860, Request("post","/report", Some("/report"), "http/1.0"), "200", 1234)
-  LogEventImpl("10.0.0.5", "-", "apache", 1549573860, Request("post","/report", Some("/report"), "http/1.0"), "500", 1307)
+  LogEventImpl("10.0.0.3", "-", "apache", 1549573860, Request("post", "/report", Some("/report"), "http/1.0"), "200", 1234)
+  LogEventImpl("10.0.0.5", "-", "apache", 1549573860, Request("post", "/report", Some("/report"), "http/1.0"), "500", 1307)
 }

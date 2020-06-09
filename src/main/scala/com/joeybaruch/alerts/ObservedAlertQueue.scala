@@ -1,12 +1,13 @@
 package com.joeybaruch.alerts
 
 import com.joeybaruch.alerts.AlertQueue.{Down, Up}
-import com.joeybaruch.datamodel.{AggregatedMetrics, ObservedSubject}
+import com.joeybaruch.datamodel.ObservedSubject
+import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.Config
 
 class ObservedAlertQueue(config: Config) extends AlertQueue(config) with ObservedSubject[AlertQueue] {
-  override def enQ(element: AggregatedMetrics.BaseAggMetrics): Unit = {
-    if(this.isEmpty) {
+  override def enQ(element: EventsWindow): Unit = {
+    if (this.isEmpty) {
       super.enQ(element)
       return
     }

@@ -3,7 +3,6 @@ package com.joeybaruch.windowing
 import akka.NotUsed
 import akka.stream.contrib.AccumulateWhileUnchanged
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.datamodel.AggregatedMetrics.AggMetrics
 import com.joeybaruch.datamodel.{AggregatedMetrics, LogEvent}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
@@ -12,19 +11,19 @@ import scala.concurrent.duration._
 
 object Aggregators extends LazyLogging {
 
-  def oneSecondAggregator: Flow[LogEvent, AggMetrics, NotUsed] = {
+  def oneSecondAggregator: Flow[LogEvent, AggregatedMetrics, NotUsed] = {
     import AggregatedMetrics._
 
     Flow[LogEvent]
       .via(AccumulateWhileUnchanged[LogEvent, Long](le => le.timestamp))
-      .map(seq => seq.map(_.as[AggMetrics]))
+      .map(seq => seq.map(_.as[AggregatedMetrics]))
       .map(seq => AggregatedMetrics.aggregate(seq))
       .map(transparentlyAssertOneSecond)
   }
 
 
-  def aggregatedMetricsTumblingWindow(config: Config): Flow[AggMetrics, AggMetrics, NotUsed] = {
-    Flow[AggMetrics]
+  def aggregatedMetricsTumblingWindow(config: Config): Flow[AggregatedMetrics, AggregatedMetrics, NotUsed] = {
+    Flow[AggregatedMetrics]
       .map(transparentlyAssertOneSecond)
       .statefulMapConcat(() => {
         val state = new AggregatingWindowState(config)
@@ -37,10 +36,10 @@ object Aggregators extends LazyLogging {
 
   final class AggregatingWindowState(config: Config) {
     val maxWindowSize: Long = config.getInt("windowing.metrics-window-size.seconds").seconds.toSeconds
-    var agg: AggMetrics = AggregatedMetrics.emptyAggMetrics
+    var agg: AggregatedMetrics = AggregatedMetrics.emptyAggregatedMetrics
 
-    def aggregate(event: AggMetrics): Seq[AggMetrics] = {
-      val tentative = event.baseAggregatedMetrics + agg.baseAggregatedMetrics
+    def aggregate(event: AggregatedMetrics): Seq[AggregatedMetrics] = {
+      val tentative = event.eventsWindow + agg.eventsWindow
       if (tentative.timeSpan <= maxWindowSize) {
         agg = agg + event
         Seq()
@@ -53,16 +52,15 @@ object Aggregators extends LazyLogging {
     }
   }
 
-  def isOneSecond(dag: AggMetrics): Boolean = {
-    val bag = dag.baseAggregatedMetrics
-    isOneSecond(bag)
+  def isOneSecond(metrics: AggregatedMetrics): Boolean = {
+    isOneSecond(metrics.eventsWindow)
   }
 
-  def isOneSecond(bag: AggregatedMetrics.BaseAggMetrics): Boolean = {
-    bag.earliestTimestamp == bag.latestTimestamp
+  def isOneSecond(win: EventsWindow): Boolean = {
+    win.timeSpan == 1
   }
 
-  private def transparentlyAssertOneSecond(dag: AggMetrics) = {
+  private def transparentlyAssertOneSecond(dag: AggregatedMetrics) = {
     assert(isOneSecond(dag))
     dag
   }

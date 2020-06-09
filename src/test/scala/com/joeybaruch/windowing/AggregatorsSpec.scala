@@ -3,8 +3,7 @@ package com.joeybaruch.windowing
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import com.joeybaruch.TestUtils._
-import com.joeybaruch.datamodel.AggregatedMetrics.AggMetrics
-import com.joeybaruch.datamodel.{LogEventImpl, Request}
+import com.joeybaruch.datamodel.AggregatedMetrics
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -27,12 +26,12 @@ class AggregatorsSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
   behavior of "one second aggregator"
   it should "transform an ordered stream of log events with different times each" in {
     val orderedSequenceOfLogEventsOnDifferentSeconds = Seq(logEvent1, logEvent2, logEvent3, logEvent4, logEvent5)
-    val expectedSequenceOfAggMetrics = orderedSequenceOfLogEventsOnDifferentSeconds.map(_.as[AggMetrics])
+    val expectedSequenceOfAggregatedMetrics = orderedSequenceOfLogEventsOnDifferentSeconds.map(_.as[AggregatedMetrics])
     val flowUnderTest = Aggregators.oneSecondAggregator
 
     val future = Source(orderedSequenceOfLogEventsOnDifferentSeconds).via(flowUnderTest).runWith(Sink.seq)
     val result = Await.result(future, 3.seconds)
-    result should contain theSameElementsInOrderAs expectedSequenceOfAggMetrics
+    result should contain theSameElementsInOrderAs expectedSequenceOfAggregatedMetrics
   }
 
   it should "combine an ordered steam of log events with overlapping timestamps by timestamp" in {
@@ -47,9 +46,9 @@ class AggregatorsSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     val le6 = copyEventWithNewTimestamp(logEvent1, time3)
     val sequenceOf5LogEventsOver2ConsecutiveSeconds = Seq(le1, le2, le3, le4, le5, le6)
 
-    val expectedSequenceOfAggregatedMetrics = Seq(le1.as[AggMetrics] + le2.as[AggMetrics],
-      le3.as[AggMetrics] + le4.as[AggMetrics] + le5.as[AggMetrics],
-      le6.as[AggMetrics])
+    val expectedSequenceOfAggregatedMetrics = Seq(le1.as[AggregatedMetrics] + le2.as[AggregatedMetrics],
+      le3.as[AggregatedMetrics] + le4.as[AggregatedMetrics] + le5.as[AggregatedMetrics],
+      le6.as[AggregatedMetrics])
 
     val flowUnderTest = Aggregators.oneSecondAggregator
 
@@ -61,12 +60,12 @@ class AggregatorsSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
 
   behavior of "metrics aggregator"
   it should "aggregate log event representations to windows by window size" in {
-    val aggM1 = copyEventWithNewTimestamp(logEvent1, 1L).as[AggMetrics]
-    val aggM2 = copyEventWithNewTimestamp(logEvent2, 2L).as[AggMetrics]
-    val aggM3 = copyEventWithNewTimestamp(logEvent3, 3L).as[AggMetrics]
-    val aggM4 = copyEventWithNewTimestamp(logEvent4, 4L).as[AggMetrics]
-    val aggM5 = copyEventWithNewTimestamp(logEvent5, 5L).as[AggMetrics]
-    val trigger = copyEventWithNewTimestamp(logEvent5, 50L).as[AggMetrics]
+    val aggM1 = copyEventWithNewTimestamp(logEvent1, 1L).as[AggregatedMetrics]
+    val aggM2 = copyEventWithNewTimestamp(logEvent2, 2L).as[AggregatedMetrics]
+    val aggM3 = copyEventWithNewTimestamp(logEvent3, 3L).as[AggregatedMetrics]
+    val aggM4 = copyEventWithNewTimestamp(logEvent4, 4L).as[AggregatedMetrics]
+    val aggM5 = copyEventWithNewTimestamp(logEvent5, 5L).as[AggregatedMetrics]
+    val trigger = copyEventWithNewTimestamp(logEvent5, 50L).as[AggregatedMetrics]
 
     val aggSeq = Seq(aggM1, aggM2, aggM3, aggM4, aggM5, trigger)
 

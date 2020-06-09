@@ -1,6 +1,6 @@
 package com.joeybaruch.datamodel
 
-import com.joeybaruch.datamodel.AggregatedMetrics.{BaseAggMetrics, AggMetrics}
+import com.joeybaruch.windowing.EventsWindow
 
 sealed trait LogLine {}
 
@@ -36,7 +36,7 @@ case class LogEventImpl(host: String,
 
 object LogEvent {
   //todo: test this
-  implicit def mapToAggMetric(event: LogEvent): AggMetrics = {
+  implicit def mapToAggMetric(event: LogEvent): AggregatedMetrics = {
     val oneStatus = Map(event.status -> 1L)
     val oneHttpMethod = Map(event.request.method -> 1L)
     val oneHttpMethodWithStatus = Map(event.request.method -> oneStatus)
@@ -47,9 +47,9 @@ object LogEvent {
     val oneSectionWithStatus = event.request.section.fold(Map.empty[String, Map[String, Long]])(section => Map(section -> oneStatus))
     val oneUserWithStatus = Map(event.authUser -> oneStatus)
 
-    val baseAggMetrics = BaseAggMetrics(1L, event.timestamp, event.timestamp)
+    val eventsWindow = EventsWindow(1L, event.timestamp, event.timestamp)
 
-    AggMetrics(baseAggMetrics,
+    AggregatedMetrics(eventsWindow,
       oneHttpMethod, oneHttpMethodWithStatus,
       oneHost, oneHostWithStatus,
       oneSection, oneSectionWithStatus,
@@ -57,9 +57,9 @@ object LogEvent {
       oneStatus, event.bytes)
   }
 
-    implicit def mapToBaseAggregatedMetric(event: LogEvent): BaseAggMetrics = {
-      mapToAggMetric(event).truncate
-    }
+  implicit def mapToEventsWindow(event: LogEvent): EventsWindow = {
+    mapToAggMetric(event).getEventsWindow
+  }
 
 
   case object SentinelEOFEvent extends LogEvent {

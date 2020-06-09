@@ -2,7 +2,7 @@ package com.joeybaruch.alerts
 
 import com.joeybaruch.TestUtils._
 import com.joeybaruch.alerts.AlertQueue.{Down, Up}
-import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
+import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -156,7 +156,7 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
       aq.averageValue
     }
     intercept[IndexOutOfBoundsException] {
-      //      aq.
+      aq.lastStatusChangeTime
     }
   }
 
@@ -173,10 +173,10 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     }
   }
 
-  lazy val e1: BaseAggMetrics = oneSecWin(1L, 10L)
-  lazy val e2: BaseAggMetrics = oneSecWin(2L, 20L)
-  lazy val e3: BaseAggMetrics = oneSecWin(3L, 30L)
-  lazy val e4: BaseAggMetrics = oneSecWin(4L, 40L)
+  lazy val e1: EventsWindow = oneSecWin(1L, 10L)
+  lazy val e2: EventsWindow = oneSecWin(2L, 20L)
+  lazy val e3: EventsWindow = oneSecWin(3L, 30L)
+  lazy val e4: EventsWindow = oneSecWin(4L, 40L)
 
 
 }
