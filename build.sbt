@@ -1,4 +1,4 @@
-name := "akka-quickstart-scala"
+name := "http-log-monitor"
 
 version := "1.0"
 scalaVersion := "2.13.2"
@@ -10,6 +10,7 @@ lazy val akkaVersion = "2.6.5"
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-stream" % akkaVersion,
   "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "2.0.0",
+  "com.typesafe.akka" %% "akka-stream-contrib" % "0.11",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.2",
 
