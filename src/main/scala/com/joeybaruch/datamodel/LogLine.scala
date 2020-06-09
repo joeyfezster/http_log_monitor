@@ -1,15 +1,14 @@
 package com.joeybaruch.datamodel
 
-import com.joeybaruch.windowing.EventsWindow
 
-sealed trait LogLine {}
+trait LogLine {}
 
 case class Headers(headers: List[String]) extends LogLine
 
 case class Request(method: String, endpoint: String, section: Option[String] = None, protocol: String)
 
 
-sealed trait LogEvent extends LogLine with Ordered[LogEvent] {
+trait LogEvent extends LogLine with Ordered[LogEvent] {
   val host: String
   val rfc931: String
   val authUser: String
@@ -20,9 +19,8 @@ sealed trait LogEvent extends LogLine with Ordered[LogEvent] {
 
   def as[T](implicit f: LogEvent => T): T = f(this)
 
-  // negating the compareTo result of two positive numbers will result in ascending order - which we need for oldest first
+  // negating the compareTo result of two positive numbers under the this compared to that pattern will result in ascending order
   override def compare(that: LogEvent): Int = -this.timestamp.compareTo(that.timestamp)
-
 }
 
 
@@ -35,32 +33,6 @@ case class LogEventImpl(host: String,
                         bytes: Int) extends LogEvent
 
 object LogEvent {
-  //todo: test this
-  implicit def mapToAggMetric(event: LogEvent): AggregatedMetrics = {
-    val oneStatus = Map(event.status -> 1L)
-    val oneHttpMethod = Map(event.request.method -> 1L)
-    val oneHttpMethodWithStatus = Map(event.request.method -> oneStatus)
-    val oneHost = Map(event.host -> 1L)
-    val oneHostWithStatus = Map(event.host -> oneStatus)
-    val oneSection = event.request.section.fold(Map.empty[String, Long])(section => Map(section -> 1L))
-    val oneUser = Map(event.authUser -> 1L)
-    val oneSectionWithStatus = event.request.section.fold(Map.empty[String, Map[String, Long]])(section => Map(section -> oneStatus))
-    val oneUserWithStatus = Map(event.authUser -> oneStatus)
-
-    val eventsWindow = EventsWindow(1L, event.timestamp, event.timestamp)
-
-    AggregatedMetrics(eventsWindow,
-      oneHttpMethod, oneHttpMethodWithStatus,
-      oneHost, oneHostWithStatus,
-      oneSection, oneSectionWithStatus,
-      oneUser, oneUserWithStatus,
-      oneStatus, event.bytes)
-  }
-
-  implicit def mapToEventsWindow(event: LogEvent): EventsWindow = {
-    mapToAggMetric(event).getEventsWindow
-  }
-
 
   case object SentinelEOFEvent extends LogEvent {
     //todo: review this paradigm - pattern matching vs implementing unnecessary functions

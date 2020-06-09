@@ -1,5 +1,7 @@
 package com.joeybaruch.datamodel
 
+import com.joeybaruch.metrics
+import com.joeybaruch.metrics.AggregatedMetrics
 import com.joeybaruch.windowing.EventsWindow
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

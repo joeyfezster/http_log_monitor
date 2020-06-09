@@ -1,6 +1,8 @@
-package com.joeybaruch.datamodel
+package com.joeybaruch.metrics
 
-import com.joeybaruch.datamodel.AggregatedMetrics._
+import com.joeybaruch.datamodel.{LogEvent, WindowedEventsMonoid}
+import com.joeybaruch.metrics
+import com.joeybaruch.metrics.AggregatedMetrics._
 import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.ConfigFactory
 
@@ -27,7 +29,7 @@ case class AggregatedMetrics(eventsWindow: EventsWindow,
 
                              statusCounters: NamedCountersCollection,
                              bytesCounter: Long
-                     ) {
+                            ) {
   def +(that: AggregatedMetrics): AggregatedMetrics = {
     val newEventsWindow = this.eventsWindow + that.eventsWindow
 
@@ -131,8 +133,6 @@ object AggregatedMetrics {
     emptyImmutableNCC, 0L)
 
 
-
-
   private def printNCC(map: NamedCountersCollection, span: Long): String = map.toSeq.foldLeft("") {
     case (agg, (name, value)) => agg.concat(f"\n\t\t\t\t$name -> $value\t ${value.toDouble / span}%.2f/sec")
   }
@@ -160,6 +160,28 @@ object AggregatedMetrics {
       }
       mergedByValue
     }
+  }
+
+  //todo: test this
+  implicit def logEventToAggregatedMetrics(event: LogEvent): AggregatedMetrics = {
+    val eventsWindow = event.as[EventsWindow]
+
+    val oneStatus = Map(event.status -> 1L)
+    val oneHttpMethod = Map(event.request.method -> 1L)
+    val oneHttpMethodWithStatus = Map(event.request.method -> oneStatus)
+    val oneHost = Map(event.host -> 1L)
+    val oneHostWithStatus = Map(event.host -> oneStatus)
+    val oneSection = event.request.section.fold(Map.empty[String, Long])(section => Map(section -> 1L))
+    val oneUser = Map(event.authUser -> 1L)
+    val oneSectionWithStatus = event.request.section.fold(Map.empty[String, Map[String, Long]])(section => Map(section -> oneStatus))
+    val oneUserWithStatus = Map(event.authUser -> oneStatus)
+
+    AggregatedMetrics(eventsWindow,
+      oneHttpMethod, oneHttpMethodWithStatus,
+      oneHost, oneHostWithStatus,
+      oneSection, oneSectionWithStatus,
+      oneUser, oneUserWithStatus,
+      oneStatus, event.bytes)
   }
 
 }

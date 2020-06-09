@@ -3,7 +3,7 @@ package com.joeybaruch.windowing
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import com.joeybaruch.TestUtils._
-import com.joeybaruch.datamodel.AggregatedMetrics
+import com.joeybaruch.metrics.AggregatedMetrics
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec

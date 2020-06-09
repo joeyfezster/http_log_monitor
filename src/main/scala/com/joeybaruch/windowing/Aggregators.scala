@@ -3,7 +3,8 @@ package com.joeybaruch.windowing
 import akka.NotUsed
 import akka.stream.contrib.AccumulateWhileUnchanged
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.datamodel.{AggregatedMetrics, LogEvent}
+import com.joeybaruch.datamodel.LogEvent
+import com.joeybaruch.metrics.AggregatedMetrics
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 

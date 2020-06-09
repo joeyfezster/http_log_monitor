@@ -1,6 +1,6 @@
 package com.joeybaruch.windowing
 
-import com.joeybaruch.datamodel.WindowedEventsMonoid
+import com.joeybaruch.datamodel.{LogEvent, WindowedEventsMonoid}
 
 import scala.math.{max, min}
 
@@ -30,4 +30,8 @@ object EventsWindow {
       override def combine(win1: EventsWindow, win2: EventsWindow): EventsWindow = win1 + win2
     }
 
+
+  implicit def logEventToEventsWindow(event: LogEvent): EventsWindow = {
+    EventsWindow(1L, event.timestamp, event.timestamp)
+  }
 }
