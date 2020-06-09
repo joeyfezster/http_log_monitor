@@ -7,16 +7,16 @@ trait AggregatedMetricsMonoid[A] {
 
   def combine(aggMetrics1: A, aggMetrics2: A): A
 
-  def aggregate(seq: Seq[A]):A = seq.foldLeft(empty)(combine)
+  def aggregate(seq: Seq[A]): A = seq.foldLeft(empty)(combine)
 }
 
 object AggregatedMetrics {
 
-  def aggregate[T: AggregatedMetricsMonoid](seq: T*): T = implicitly[AggregatedMetricsMonoid[T]].aggregate(seq)
+  def aggregate[T: AggregatedMetricsMonoid](seq: Seq[T]): T = implicitly[AggregatedMetricsMonoid[T]].aggregate(seq)
 
 
-  /** *************     Implicit conversions from our metrics containers to our monoid        **************/
-  implicit def baseMetricsMonoid[A]: AggregatedMetricsMonoid[BaseAggMetrics] =
+  /** *************     Implicit monoids for our Aggregated Metrics containers        **************/
+  implicit val baseMetricsMonoid: AggregatedMetricsMonoid[BaseAggMetrics] =
     new AggregatedMetricsMonoid[BaseAggMetrics] {
       override def empty: BaseAggMetrics = emptyBaseAggMetrics
 
@@ -24,7 +24,7 @@ object AggregatedMetrics {
         aggMetrics1 + aggMetrics2
     }
 
-  implicit def debugMetricsMonoid[A]: AggregatedMetricsMonoid[DebugAggMetrics] =
+  implicit val debugMetricsMonoid: AggregatedMetricsMonoid[DebugAggMetrics] =
     new AggregatedMetricsMonoid[DebugAggMetrics] {
       override def empty: DebugAggMetrics = emptyDebugAggMetrics
 
@@ -40,11 +40,12 @@ object AggregatedMetrics {
 
   private def emptyImmutableNCHC: NamedCountersHyperCollection = Map.empty[String, NamedCountersCollection]
 
-  private val emptyBaseAggMetrics = BaseAggMetrics(0L, Long.MaxValue, Long.MinValue, emptyImmutableNCC)
+  val emptyBaseAggMetrics: BaseAggMetrics = BaseAggMetrics(0L, Long.MaxValue, Long.MinValue)
 
-  private val emptyDebugAggMetrics = DebugAggMetrics(emptyBaseAggMetrics, emptyImmutableNCC, emptyImmutableNCHC,
+  val emptyDebugAggMetrics: DebugAggMetrics = DebugAggMetrics(emptyBaseAggMetrics,
     emptyImmutableNCC, emptyImmutableNCHC,
-    emptyImmutableNCHC,
+    emptyImmutableNCC, emptyImmutableNCHC,
+    emptyImmutableNCC, emptyImmutableNCHC,
     emptyImmutableNCC, emptyImmutableNCHC,
     emptyImmutableNCC, 0L)
 
@@ -53,10 +54,7 @@ object AggregatedMetrics {
   case class BaseAggMetrics(/** ****** window info *********/
                             eventCount: Long,
                             earliestTimestamp: Long,
-                            latestTimestamp: Long,
-
-                            /** ****** business metrics *********/
-                            sectionCounters: NamedCountersCollection) {
+                            latestTimestamp: Long) {
 
     val timeSpan: Long = latestTimestamp - earliestTimestamp
 
@@ -65,9 +63,8 @@ object AggregatedMetrics {
       val newEventCount = this.eventCount + that.eventCount
       val newEarliestTimestamp = min(this.earliestTimestamp, that.earliestTimestamp)
       val newLatestTimestamp = max(this.latestTimestamp, that.latestTimestamp)
-      val newSectionCounters = this.sectionCounters unionWith that.sectionCounters
 
-      BaseAggMetrics(newEventCount, newEarliestTimestamp, newLatestTimestamp, newSectionCounters)
+      BaseAggMetrics(newEventCount, newEarliestTimestamp, newLatestTimestamp)
     }
 
   }
@@ -84,6 +81,7 @@ object AggregatedMetrics {
                              // could specific hosts have bad response trends?
                              hostResponseStatusCounters: NamedCountersHyperCollection,
 
+                             sectionCounters: NamedCountersCollection, // required by product !!
                              // could specific sections have bad response trends?
                              sectionResponseStatusCounters: NamedCountersHyperCollection,
 
@@ -103,6 +101,7 @@ object AggregatedMetrics {
       val newHostsCounters = this.hostsCounters unionWith that.hostsCounters
       val newHostResponseStatusCounters = this.hostResponseStatusCounters unionWith that.hostResponseStatusCounters
 
+      val newSectionCounters = this.sectionCounters unionWith that.sectionCounters
       val newSectionResponseStatusCounters = this.sectionResponseStatusCounters unionWith that.sectionResponseStatusCounters
 
       val newUsersCounters = this.usersCounters unionWith that.usersCounters
@@ -114,7 +113,7 @@ object AggregatedMetrics {
       DebugAggMetrics(newBaseAggMetrics,
         newHttpMethodsCounters, newHttpMethodResponseStatusCounters,
         newHostsCounters, newHostResponseStatusCounters,
-        newSectionResponseStatusCounters,
+        newSectionCounters, newSectionResponseStatusCounters,
         newUsersCounters, newUserResponseStatusCounters,
         newStatusCounters, newBytesCounter)
     }

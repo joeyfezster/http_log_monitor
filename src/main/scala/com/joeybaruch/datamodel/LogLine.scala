@@ -46,12 +46,12 @@ object LogEvent {
     val oneSectionWithStatus = event.request.section.fold(Map.empty[String, Map[String, Long]])(section => Map(section -> oneStatus))
     val oneUserWithStatus = Map(event.authUser -> oneStatus)
 
-    val baseAggMetrics = BaseAggMetrics(1L, event.timestamp, event.timestamp, oneSection)
+    val baseAggMetrics = BaseAggMetrics(1L, event.timestamp, event.timestamp)
 
     DebugAggMetrics(baseAggMetrics,
       oneHttpMethod, oneHttpMethodWithStatus,
       oneHost, oneHostWithStatus,
-      oneSectionWithStatus,
+      oneSection, oneSectionWithStatus,
       oneUser, oneUserWithStatus,
       oneStatus, event.bytes)
   }
