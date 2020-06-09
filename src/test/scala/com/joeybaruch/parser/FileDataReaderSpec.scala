@@ -1,4 +1,4 @@
-package com.joeybaruch.monitor
+package com.joeybaruch.parser
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
@@ -41,6 +41,10 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
     val result = runParseForFile(smallSampleWithSomeBadLogs)
 
     result should contain theSameElementsInOrderAs fileParseResults
+  }
+
+  //todo: test for empty file - throw exception?
+  it should "" in {
   }
 
   behavior of "Implicit Ordering of LogEvents"

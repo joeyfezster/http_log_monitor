@@ -7,6 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
 
+/** todo comment - Not thread safe, but Akka will have one per file under processing**/
 class AlertQueue(config: Config) extends LazyLogging {
   private val spanInSeconds = config.getInt("alerts.raise-recover.avg.seconds")
   private val threshold = config.getDouble("alerts.requests.per-second.threshold")
@@ -15,6 +16,8 @@ class AlertQueue(config: Config) extends LazyLogging {
   private val queue = new mutable.Queue[Element]
   private var cumulativeValue: Long = 0
   private var alertingElementsInQueue: Int = 0
+  private var lastTriggeringTime: Long = _
+
 
   def alertStatus: AlertToggle = {
     verifyNonEmpty
@@ -36,6 +39,12 @@ class AlertQueue(config: Config) extends LazyLogging {
 
   def isEmpty: Boolean = queue.isEmpty
 
+  def lastStatusChangeTime : Long = {
+    alertStatus match {
+      case Up => lastTriggeringTime
+      case Down => scala.math.min(latestTime, lastTriggeringTime + spanInSeconds.toLong)
+    }
+  }
 
   def enQ(element: BaseAggMetrics) = {
     require(element.latestTimestamp == element.earliestTimestamp, "Alert Queue requires exactly one second aggregations")
@@ -87,6 +96,7 @@ class AlertQueue(config: Config) extends LazyLogging {
       logger.debug(s"alerting element - (t: threshold, cv: cumulativeValue, siq: spanInQueue, elem: element)" +
         s" (t: $threshold, cv: $cumulativeValue, tsn: $spanInQueue, elem: $element)")
       queue.last.alertToggle = Up
+      lastTriggeringTime = queue.last.bag.earliestTimestamp
       alertingElementsInQueue += 1
     }
   }

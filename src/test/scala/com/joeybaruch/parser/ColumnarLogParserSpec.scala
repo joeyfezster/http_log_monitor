@@ -1,4 +1,4 @@
-package com.joeybaruch.monitor
+package com.joeybaruch.parser
 
 import com.joeybaruch.datamodel.{Headers, LogEvent, LogEventImpl, Request, UnparsableEvent}
 import com.typesafe.config.{Config, ConfigFactory}

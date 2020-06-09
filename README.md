@@ -17,6 +17,13 @@ In other words, reports occur for each mutually exclusive 10 second batch of eve
 
 ## Next Steps
 
+### Productionazition
+1. Mocking to decouple functionalities in tests
+1. Abstracting `AggMetrics` s.t. it will be possible to define desired metrics
+from the config file, rather than hardcoded
+1. Abstracting `BaseAggMetrics` ???
+1. Custom graphs vs `statefulMapConcat` why?
+
 ### Paralelism
 
 ### Windowing vs Time Alignment

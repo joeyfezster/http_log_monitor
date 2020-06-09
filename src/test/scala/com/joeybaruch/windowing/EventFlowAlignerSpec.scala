@@ -18,12 +18,12 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
   implicit val system: ActorSystem = ActorSystem()
   var config: Config = _
   var allowedDelay: Long = _
-  var minUnalowedDelay: Long = _
+  var minIllegalDelay: Long = _
 
   before {
     config = ConfigFactory.load("test-conf")
     allowedDelay = config.getInt("windowing.late-data.delay-allowed.seconds").seconds.toSeconds
-    minUnalowedDelay = allowedDelay + 1
+    minIllegalDelay = allowedDelay + 1
   }
 
   behavior of "timeAligned"
@@ -39,7 +39,7 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
   }
 
   it should "discard late data" in {
-    var eventSequenceWithLateData = orderedEventSequence :+ addOffsetToEvent(orderedEventSequence.last, minUnalowedDelay)
+    var eventSequenceWithLateData = orderedEventSequence :+ addOffsetToEvent(orderedEventSequence.last, minIllegalDelay)
     eventSequenceWithLateData = addTriggeringEvent(eventSequenceWithLateData)
 
     val flowUnderTest = EventFlowAligner.timeAligned(config)
@@ -53,10 +53,6 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
   def addOffsetToEvent(event: LogEvent, offset: Long) = {
     val timesamp = event.timestamp - offset
     copyEventWithNewTimestamp(event, timesamp)
-  }
-
-  private def copyEventWithNewTimestamp(event: LogEvent, timesamp: Long) = {
-    LogEventImpl(event.host, event.rfc931, event.authUser, timesamp, event.request, event.status, event.bytes)
   }
 
   def addTriggeringEvent(seq: Seq[LogEvent]): Seq[LogEvent] = seq :+ SentinelEOFEvent
