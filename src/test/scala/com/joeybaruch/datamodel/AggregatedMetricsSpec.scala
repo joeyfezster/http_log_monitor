@@ -1,9 +1,8 @@
 package com.joeybaruch.datamodel
 
+import com.joeybaruch.windowing.EventsWindow
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
-import scala.collection.mutable
 
 class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
 
@@ -12,14 +11,14 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   behavior of "AggregatedMetricsMonoid"
 
   it should "aggregate via the monoid abstraction" in {
-    AggregatedMetrics.aggregate(Seq(bag1, bag2)) should equal(bag1Plus2)
+    AggregatedMetrics.aggregate(Seq(win1, win2)) should equal(win1Plus2)
     AggregatedMetrics.aggregate(Seq(full1, full2)) should equal(full1Plus2)
   }
 
   behavior of "AggregatedMetricsObject"
 
   it should "aggregate base metrics correctly" in {
-    bag1 + bag2 should equal(bag1Plus2)
+    win1 + win2 should equal(win1Plus2)
   }
 
   it should "aggregate full metrics correctly" in {
@@ -27,7 +26,7 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "truncate the superset into the subset" in {
-    full1.truncate should equal(bag1)
+    full1.getEventsWindow should equal(win1)
   }
 
 
@@ -53,9 +52,9 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   private lazy val twoSection1 = Map("s1" -> 2L)
   private lazy val oneSection2 = Map("s2" -> 1L)
 
-  lazy val bag1: BaseAggMetrics = BaseAggMetrics(1, 1L, 1L)
-  lazy val bag2: BaseAggMetrics = BaseAggMetrics(1, 2L, 2L)
-  lazy val bag1Plus2: BaseAggMetrics = BaseAggMetrics(2, 1L, 2L)
+  lazy val win1: EventsWindow = EventsWindow(1, 1L, 1L)
+  lazy val win2: EventsWindow = EventsWindow(1, 2L, 2L)
+  lazy val win1Plus2: EventsWindow = EventsWindow(2, 1L, 2L)
 
   private lazy val oneGet = Map("get" -> 1L)
   private lazy val onePut = Map("put" -> 1L)
@@ -80,19 +79,19 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   private lazy val oneUser1WithOneOk = Map("u1" -> oneOkStatus)
   private lazy val oneUser1WithOneNotFound = Map("u1" -> oneNotFoundStatus)
 
-  lazy val full1: AggMetrics = AggMetrics(bag1,
+  lazy val full1: AggregatedMetrics = AggregatedMetrics(win1,
     oneGet, getWithOneOk,
     oneHost1, host1WithOneOk,
     oneSection1, section1WithOneOk,
     oneUser1, oneUser1WithOneOk,
     oneOkStatus, 10L)
-  lazy val full2: AggMetrics = AggMetrics(bag2,
+  lazy val full2: AggregatedMetrics = AggregatedMetrics(win2,
     onePut, putWithOneNotFound,
     oneHost1, host1WithOneNotFound,
     oneSection1, section1WithOneNotFound,
     oneUser1, oneUser1WithOneNotFound,
     oneNotFoundStatus, 10L)
-  lazy val full1Plus2: AggMetrics = AggMetrics(bag1Plus2,
+  lazy val full1Plus2: AggregatedMetrics = AggregatedMetrics(win1Plus2,
     oneGet ++ onePut, Map("get" -> oneOkStatus, "put" -> oneNotFoundStatus),
     twoHost1, Map("h1" -> oneOkOneNotFound),
     twoSection1, Map("s1" -> oneOkOneNotFound),

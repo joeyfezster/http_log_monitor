@@ -27,7 +27,7 @@ object HttpLogMonitor {
     val fileDataReader = new FileDataReader(config, parser)
 
     //Eli: you are materializing the source twice (each run does it), meaning you will go over the file TWICE! This is against what they wrote in the instructions.
-    val aggMetricSource: Source[AggregatedMetrics.AggMetrics, NotUsed] = fileDataReader.fileSource(file)
+    val AggregatedMetricsource: Source[AggregatedMetrics, NotUsed] = fileDataReader.fileSource(file)
       .via(EventFlowAligner.timeAligned(config))
       .via(Aggregators.oneSecondAggregator)
 
@@ -37,10 +37,10 @@ object HttpLogMonitor {
     observedAlertQueue.addObserver(consoleReporter.ConsoleAlertReporter)
     observedMetricsCollector.addObserver(consoleReporter.ConsoleMetricsReporter)
 
-    val alertSinkFuture = aggMetricSource
-      .map(_.truncate)
+    val alertSinkFuture = AggregatedMetricsource
+      .map(_.getEventsWindow)
       .runWith(AlertSink.alertingSink(observedAlertQueue))
-    val metricsSinkFuture = aggMetricSource
+    val metricsSinkFuture = AggregatedMetricsource
       .via(Aggregators.aggregatedMetricsTumblingWindow(config))
       .runWith(MetricsSink.metricsSink(observedMetricsCollector))
 

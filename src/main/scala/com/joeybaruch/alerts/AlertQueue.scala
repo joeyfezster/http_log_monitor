@@ -1,7 +1,7 @@
 package com.joeybaruch.alerts
 
 import com.joeybaruch.alerts.AlertQueue.{AlertToggle, Down, Element, Up}
-import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
+import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
@@ -24,9 +24,9 @@ class AlertQueue(config: Config) extends LazyLogging {
     if (alertingElementsInQueue > 0) Up else Down
   }
 
-  def earliestTime: Long = queue.headOption.fold(Long.MinValue)(_.bag.earliestTimestamp)
+  def earliestTime: Long = queue.headOption.fold(Long.MinValue)(_.win.earliestTimestamp)
 
-  def latestTime: Long = queue.lastOption.fold(Long.MinValue)(_.bag.earliestTimestamp)
+  def latestTime: Long = queue.lastOption.fold(Long.MinValue)(_.win.earliestTimestamp)
 
   def spanInQueue: Long = latestTime - earliestTime + 1
 
@@ -46,7 +46,7 @@ class AlertQueue(config: Config) extends LazyLogging {
     }
   }
 
-  def enQ(element: BaseAggMetrics) = {
+  def enQ(element: EventsWindow) = {
     require(element.latestTimestamp == element.earliestTimestamp, "Alert Queue requires exactly one second aggregations")
     require(element.earliestTimestamp > latestTime,
       s"Event time ${element.earliestTimestamp} is later than the queue's latest event received: $latestTime")
@@ -82,7 +82,7 @@ class AlertQueue(config: Config) extends LazyLogging {
     logger.debug("pop")
     val poped = queue.dequeue()
 
-    cumulativeValue -= poped.bag.eventCount
+    cumulativeValue -= poped.win.eventCount
     if (poped.alertToggle equals Up) {
       alertingElementsInQueue -= 1
     }
@@ -90,13 +90,13 @@ class AlertQueue(config: Config) extends LazyLogging {
   }
 
 
-  private def updateIfAlert(element: BaseAggMetrics) = {
+  private def updateIfAlert(element: EventsWindow) = {
     val newAvg = averageValue
     if (newAvg >= threshold) {
       logger.debug(s"alerting element - (t: threshold, cv: cumulativeValue, siq: spanInQueue, elem: element)" +
         s" (t: $threshold, cv: $cumulativeValue, tsn: $spanInQueue, elem: $element)")
       queue.last.alertToggle = Up
-      lastTriggeringTime = queue.last.bag.earliestTimestamp
+      lastTriggeringTime = queue.last.win.earliestTimestamp
       alertingElementsInQueue += 1
     }
   }
@@ -113,6 +113,6 @@ object AlertQueue {
 
   case object Down extends AlertToggle
 
-  case class Element(bag: BaseAggMetrics, var alertToggle: AlertToggle)
+  case class Element(win: EventsWindow, var alertToggle: AlertToggle)
 
 }
