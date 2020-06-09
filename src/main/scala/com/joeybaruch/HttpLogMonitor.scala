@@ -4,9 +4,8 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Source
 import com.joeybaruch.alerts.{AlertSink, ObservedAlertQueue}
-import com.joeybaruch.datamodel.AggregatedMetrics
 import com.joeybaruch.io.ConsoleReporter
-import com.joeybaruch.metrics.{MetricsSink, ObservedMetricsCollector}
+import com.joeybaruch.metrics.{AggregatedMetrics, MetricsSink, ObservedMetricsCollector}
 import com.joeybaruch.parser.{ColumnarLogParser, FileDataReader}
 import com.joeybaruch.windowing.{Aggregators, EventFlowAligner}
 import com.typesafe.config.ConfigFactory
@@ -24,7 +23,7 @@ object HttpLogMonitor {
     val config = ConfigFactory.load()
     val parser = new ColumnarLogParser(config)
 
-    val fileDataReader = new FileDataReader(config, parser)
+    val fileDataReader = new FileDataReader(parser)
 
     //Eli: you are materializing the source twice (each run does it), meaning you will go over the file TWICE! This is against what they wrote in the instructions.
     val AggregatedMetricsource: Source[AggregatedMetrics, NotUsed] = fileDataReader.fileSource(file)
@@ -47,7 +46,7 @@ object HttpLogMonitor {
     //Eli: NEVER use Await.result for a future. In your case it will crash with an exception after 3 seconds
     Await.result(alertSinkFuture, 3.seconds)
     //Eli: For both results you are not "watching" the result (and in case someone will watch it from outside, it will be only for the second Future
-    Await.result(metricsSinkFuture, 3.seconds)
+//    Await.result(metricsSinkFuture, 3.seconds)
 
   }
 }

@@ -26,7 +26,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
   before {
     config = ConfigFactory.load("test-conf")
     logParser = new ColumnarLogParser(config)
-    fileDataReader = new FileDataReader(config, logParser)
+    fileDataReader = new FileDataReader(logParser)
   }
 
   behavior of "processFile"
@@ -48,7 +48,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
   }
 
   behavior of "Implicit Ordering of LogEvents"
-  it should "testing min q" in {
+  it should "order in ascending order" in {
     val q = mutable.PriorityQueue.empty[LogEvent]
     val logs = Seq(logEvent2, logEvent1)
 
@@ -60,7 +60,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
 
 
   private def runParseForFile(filename: String): Seq[LogEvent] = {
-    val sourceUnderTest = new FileDataReader(config, new ColumnarLogParser(config)).fileSource(filename)
+    val sourceUnderTest = new FileDataReader(new ColumnarLogParser(config)).fileSource(filename)
 
     val future = sourceUnderTest.take(10).runWith(Sink.seq)
     val result = Await.result(future, 3.seconds)

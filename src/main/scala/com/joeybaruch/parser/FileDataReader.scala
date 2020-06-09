@@ -13,7 +13,7 @@ import com.joeybaruch.datamodel.{LogEvent, LogLine}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
-class FileDataReader(config: Config, parser: LogParser)
+class FileDataReader(parser: LogParser)
                     (implicit system: ActorSystem) extends LazyLogging {
 
   def fileSource(filepath: String): Source[LogEvent, NotUsed] = {

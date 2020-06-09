@@ -5,8 +5,8 @@ import com.joeybaruch.io.ConsoleReporter.{ConsoleAlertReporter, ConsoleMetricsRe
 import com.joeybaruch.metrics.MetricCollector
 
 class ConsoleReporter extends Reporter {
-  override val metricReporter = ConsoleMetricsReporter
-  override val alertReporter = ConsoleAlertReporter
+  override val metricReporter: MetricsReporter = ConsoleMetricsReporter
+  override val alertReporter: AlertReporter = ConsoleAlertReporter
 }
 
 object ConsoleReporter {
