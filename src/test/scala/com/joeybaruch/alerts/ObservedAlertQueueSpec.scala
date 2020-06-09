@@ -1,12 +1,13 @@
-package com.joeybaruch.aggregators
+package com.joeybaruch.alerts
 
-import com.joeybaruch.aggregators.AlertQueue.{Down, Up}
+import com.joeybaruch.alerts.AlertQueue.{Down, Up}
 import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
 import com.joeybaruch.datamodel.Observer
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+import com.joeybaruch.TestUtils._
 
 class ObservedAlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
 
@@ -76,8 +77,5 @@ class ObservedAlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAft
     }
   }
 
-  def bag(ts: Long, ec: Long): BaseAggMetrics = {
-    BaseAggMetrics(ec, ts, ts)
-  }
 
 }

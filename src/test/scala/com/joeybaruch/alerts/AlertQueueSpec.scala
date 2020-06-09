@@ -1,9 +1,10 @@
-package com.joeybaruch.aggregators
+package com.joeybaruch.alerts
 
-import com.joeybaruch.aggregators.AlertQueue.{Down, Up}
+import com.joeybaruch.TestUtils._
+import com.joeybaruch.alerts.AlertQueue.{Down, Up}
 import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
 import com.typesafe.config.{Config, ConfigFactory}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -144,7 +145,4 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
   lazy val e4: BaseAggMetrics = bag(4L, 40L)
 
 
-  def bag(ts: Long, ec: Long): BaseAggMetrics = {
-    BaseAggMetrics(ec, ts, ts)
-  }
 }

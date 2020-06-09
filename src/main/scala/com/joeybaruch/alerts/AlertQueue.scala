@@ -1,6 +1,6 @@
-package com.joeybaruch.aggregators
+package com.joeybaruch.alerts
 
-import com.joeybaruch.aggregators.AlertQueue.{AlertToggle, Down, Element, Up}
+import com.joeybaruch.alerts.AlertQueue.{AlertToggle, Down, Element, Up}
 import com.joeybaruch.datamodel.AggregatedMetrics.BaseAggMetrics
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging

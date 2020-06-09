@@ -2,13 +2,6 @@ package com.joeybaruch.datamodel
 
 import scala.math.{max, min}
 
-trait AggregatedMetricsMonoid[A] {
-  def empty: A
-
-  def combine(aggMetrics1: A, aggMetrics2: A): A
-
-  def aggregate(seq: Seq[A]): A = seq.foldLeft(empty)(combine)
-}
 
 object AggregatedMetrics {
 
@@ -24,25 +17,25 @@ object AggregatedMetrics {
         aggMetrics1 + aggMetrics2
     }
 
-  implicit val debugMetricsMonoid: AggregatedMetricsMonoid[DebugAggMetrics] =
-    new AggregatedMetricsMonoid[DebugAggMetrics] {
-      override def empty: DebugAggMetrics = emptyDebugAggMetrics
+  implicit val aggMetricsMonoid: AggregatedMetricsMonoid[AggMetrics] =
+    new AggregatedMetricsMonoid[AggMetrics] {
+      override def empty: AggMetrics = emptyAggMetrics
 
-      override def combine(aggMetrics1: DebugAggMetrics, aggMetrics2: DebugAggMetrics): DebugAggMetrics =
+      override def combine(aggMetrics1: AggMetrics, aggMetrics2: AggMetrics): AggMetrics =
         aggMetrics1 + aggMetrics2
     }
 
   type NamedCountersCollection = Map[String, Long]
   type NamedCountersHyperCollection = Map[String, NamedCountersCollection]
 
-  /** *************     Empty Units for Monoid        **************/
+  /** *************     Empty Units for Monoids        **************/
   private def emptyImmutableNCC: NamedCountersCollection = Map.empty[String, Long]
 
   private def emptyImmutableNCHC: NamedCountersHyperCollection = Map.empty[String, NamedCountersCollection]
 
   val emptyBaseAggMetrics: BaseAggMetrics = BaseAggMetrics(0L, Long.MaxValue, Long.MinValue)
 
-  val emptyDebugAggMetrics: DebugAggMetrics = DebugAggMetrics(emptyBaseAggMetrics,
+  val emptyAggMetrics: AggMetrics = AggMetrics(emptyBaseAggMetrics,
     emptyImmutableNCC, emptyImmutableNCHC,
     emptyImmutableNCC, emptyImmutableNCHC,
     emptyImmutableNCC, emptyImmutableNCHC,
@@ -50,7 +43,7 @@ object AggregatedMetrics {
     emptyImmutableNCC, 0L)
 
 
-  /** *************     Light and heavy (base & debug) containers for metrics        **************/
+  /** *************     Light and heavy (base & full) containers for metrics        **************/
   case class BaseAggMetrics(/** ****** window info *********/
                             eventCount: Long,
                             earliestTimestamp: Long,
@@ -70,29 +63,29 @@ object AggregatedMetrics {
   }
 
 
-  case class DebugAggMetrics(baseAggregatedMetrics: BaseAggMetrics,
+  case class AggMetrics(baseAggregatedMetrics: BaseAggMetrics,
 
-                             /** ****** business metrics *********/
-                             httpMethodsCounters: NamedCountersCollection,
-                             // could specific http methods/verbs be having negative trends?
-                             httpMethodResponseStatusCounters: NamedCountersHyperCollection,
+                        /** ****** business metrics *********/
+                        httpMethodsCounters: NamedCountersCollection,
+                        // could specific http methods/verbs be having negative trends?
+                        httpMethodResponseStatusCounters: NamedCountersHyperCollection,
 
-                             hostsCounters: NamedCountersCollection,
-                             // could specific hosts have bad response trends?
-                             hostResponseStatusCounters: NamedCountersHyperCollection,
+                        hostsCounters: NamedCountersCollection,
+                        // could specific hosts have bad response trends?
+                        hostResponseStatusCounters: NamedCountersHyperCollection,
 
-                             sectionCounters: NamedCountersCollection, // required by product !!
-                             // could specific sections have bad response trends?
-                             sectionResponseStatusCounters: NamedCountersHyperCollection,
+                        sectionCounters: NamedCountersCollection, // required by product !!
+                        // could specific sections have bad response trends?
+                        sectionResponseStatusCounters: NamedCountersHyperCollection,
 
-                             usersCounters: NamedCountersCollection,
-                             // could specific users have bad response trends?
-                             userResponseStatusCounter: NamedCountersHyperCollection,
+                        usersCounters: NamedCountersCollection,
+                        // could specific users have bad response trends?
+                        userResponseStatusCounter: NamedCountersHyperCollection,
 
-                             statusCounters: NamedCountersCollection,
-                             bytesCounter: Long
+                        statusCounters: NamedCountersCollection,
+                        bytesCounter: Long
                             ) {
-    def +(that: DebugAggMetrics): DebugAggMetrics = {
+    def +(that: AggMetrics): AggMetrics = {
       val newBaseAggMetrics = (this.baseAggregatedMetrics + that.baseAggregatedMetrics)
 
       val newHttpMethodsCounters = this.httpMethodsCounters unionWith that.httpMethodsCounters
@@ -110,7 +103,7 @@ object AggregatedMetrics {
       val newStatusCounters = this.statusCounters unionWith that.statusCounters
       val newBytesCounter = this.bytesCounter + that.bytesCounter
 
-      DebugAggMetrics(newBaseAggMetrics,
+      AggMetrics(newBaseAggMetrics,
         newHttpMethodsCounters, newHttpMethodResponseStatusCounters,
         newHostsCounters, newHostResponseStatusCounters,
         newSectionCounters, newSectionResponseStatusCounters,

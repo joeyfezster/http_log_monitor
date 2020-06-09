@@ -1,6 +1,6 @@
-package com.joeybaruch.aggregators
+package com.joeybaruch.alerts
 
-import com.joeybaruch.aggregators.AlertQueue.{Down, Up}
+import com.joeybaruch.alerts.AlertQueue.{Down, Up}
 import com.joeybaruch.datamodel.{AggregatedMetrics, ObservedSubject}
 import com.typesafe.config.Config
 

@@ -12,7 +12,7 @@ class ColumnarLogParserSpec extends AnyFlatSpec with Matchers with BeforeAndAfte
   var parserUnderTest: ColumnarLogParser = _
 
   before {
-    config = ConfigFactory.load()
+    config = ConfigFactory.load("test-conf")
     parserUnderTest = new ColumnarLogParser(config)
   }
 
