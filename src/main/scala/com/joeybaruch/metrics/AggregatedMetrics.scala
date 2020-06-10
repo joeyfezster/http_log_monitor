@@ -1,7 +1,6 @@
 package com.joeybaruch.metrics
 
 import com.joeybaruch.datamodel.{LogEvent, WindowedEventsMonoid}
-import com.joeybaruch.metrics
 import com.joeybaruch.metrics.AggregatedMetrics._
 import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.ConfigFactory
@@ -75,6 +74,7 @@ case class AggregatedMetrics(eventsWindow: EventsWindow,
 
 
   private val default3: Int = 3
+  // the following are unaffected by configs set at the test level, change in .conf file or as environment variable
   private val showDebugStats: Boolean = Try(ConfigFactory.load().getBoolean("show-debug-stats")).getOrElse(true)
   private val topN: Int = Try(ConfigFactory.load().getInt("top-sections-to-show")).getOrElse(default3)
 
@@ -94,9 +94,9 @@ case class AggregatedMetrics(eventsWindow: EventsWindow,
       s"\n\tTotal legal log lines: ${eventsWindow.eventCount}" +
       s"\n\tTop Sections Hit: $topSections" +
       s"\n\tCall rate: ${eventsWindow.eventCount.toDouble / eventsWindow.timeSpan} calls per second" +
-      s"\n\t"
+      s"\n"
 
-    if (showDebugStats) str.concat(debugStats) else str
+    (if (showDebugStats) str.concat(debugStats) else str) concat "\n\\-----------------------------------/"
   }
 }
 
@@ -162,7 +162,6 @@ object AggregatedMetrics {
     }
   }
 
-  //todo: test this
   implicit def logEventToAggregatedMetrics(event: LogEvent): AggregatedMetrics = {
     val eventsWindow = event.as[EventsWindow]
 

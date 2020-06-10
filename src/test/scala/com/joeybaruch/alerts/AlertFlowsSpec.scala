@@ -1,9 +1,10 @@
 package com.joeybaruch.alerts
 
-import akka.Done
+import akka.{Done, NotUsed}
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{Flow, Sink, Source}
 import com.joeybaruch.TestUtils._
+import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.{Config, ConfigFactory, ConfigValueFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -13,7 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Success
 
-class AlertSinkSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
+class AlertFlowsSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
   implicit val system: ActorSystem = ActorSystem()
 
   var config: Config = _
@@ -30,7 +31,7 @@ class AlertSinkSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     oaq.addObserver(testReporter)
   }
 
-  behavior of "alert sink"
+  behavior of "processing alerts"
   it should "let it flow" in {
     //                 expected:  (triggered, recovered)
     val ie1 = oneSecWin(1L, 10L)
@@ -42,8 +43,8 @@ class AlertSinkSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     val ie7 = oneSecWin(7L, 70L)
     val inputExpectedSeq = Seq(ie1, ie2, ie3, ie4, ie5, ie6, ie7)
 
-    val sinkUnderTest = AlertSink.alertingSink(oaq)
-    val future = Source(inputExpectedSeq).runWith(sinkUnderTest)
+    val flowUnderTest: Flow[EventsWindow, Nothing, NotUsed] = AlertFlows.processAlerts(oaq)
+    val future = Source(inputExpectedSeq).via(flowUnderTest).runWith(Sink.ignore)
     Await.result(future, 3.seconds)
 
     future.value.get should be(Success(Done))

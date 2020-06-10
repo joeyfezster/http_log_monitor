@@ -1,6 +1,7 @@
 package com.joeybaruch.datamodel
 
-import com.joeybaruch.metrics
+import com.joeybaruch.TestUtils.logEvent1
+import com.joeybaruch.{TestUtils, metrics}
 import com.joeybaruch.metrics.AggregatedMetrics
 import com.joeybaruch.windowing.EventsWindow
 import org.scalatest.flatspec.AnyFlatSpec
@@ -32,8 +33,7 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   }
 
 
-  behavior of "map extensions"
-
+  behavior of "implicit map extensions"
   they should "concatenate mutually exclusive maps" in {
     oneSection1 unionWith oneSection2 should equal(oneSection1 ++ oneSection2)
     getWithOneOk unionWith putWithOneNotFound should equal(getWithOneOk ++ putWithOneNotFound)
@@ -48,6 +48,23 @@ class AggregatedMetricsSpec extends AnyFlatSpec with Matchers {
   they should "merge mutually inclusive sets" in {
     oneSection1 unionWith oneSection1 should equal(twoSection1)
     putWithOneOk unionWith putWithOneOk should equal(putWithTwoOk)
+  }
+
+  behavior of "implicit conversion from log event to metrics"
+  it should "convert a log event to a metrics" in {
+    val le = logEvent1
+    val implicitlyConverted = le.as[AggregatedMetrics]
+
+    val statusMap = Map(le.status -> 1L)
+    val section = le.request.section.get
+    val expected = AggregatedMetrics(EventsWindow(1L, le.timestamp, le.timestamp),
+      Map(le.request.method -> 1L), Map(le.request.method -> statusMap),
+      Map(le.host -> 1L), Map(le.host -> statusMap),
+      Map(section -> 1L), Map(section -> statusMap),
+      Map(le.authUser -> 1L), Map(le.authUser -> statusMap),
+      statusMap, le.bytes)
+
+    implicitlyConverted should equal(expected)
   }
 
   private lazy val oneSection1 = Map("s1" -> 1L)

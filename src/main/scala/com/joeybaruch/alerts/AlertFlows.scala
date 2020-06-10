@@ -1,14 +1,12 @@
 package com.joeybaruch.alerts
 
-import akka.Done
-import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.NotUsed
+import akka.stream.scaladsl.Flow
 import com.joeybaruch.windowing.Aggregators._
 import com.joeybaruch.windowing.EventsWindow
 
-import scala.concurrent.Future
-
-object AlertSink {
-  def alertingSink(observedAlertQueue: ObservedAlertQueue): Sink[EventsWindow, Future[Done]] = {
+object AlertFlows {
+  def processAlerts(observedAlertQueue: ObservedAlertQueue): Flow[EventsWindow, Nothing, NotUsed] = {
     Flow[EventsWindow]
       .map(win => {
         assert(isOneSecond(win))
@@ -19,7 +17,7 @@ object AlertSink {
           observedAlertQueue.enQ(element)
           Seq()
         }
-      }.toMat(Sink.ignore)(Keep.right)
+      }
   }
 
 }
