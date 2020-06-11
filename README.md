@@ -3,6 +3,7 @@
 ## Installation Instructions
 This artifact is packaged as a jar, and therefore it is required to have java installed on your environment.
 For details on installing java see [here](https://java.com/en/download/help/download_options.xml).
+
 ## Running Instructions
 To run this program you'll need:
 1. The artifact provided named `http-log-monitor-assembly-1.0.jar`
@@ -22,6 +23,8 @@ alerts.raise-recover.avg.seconds=120          \\Alerting raise/recovery time
 alerts.requests.per-second.threshold=10       \\Total traffic alerting threshold   
 windowing.late-data.delay-allowed.seconds=5   \\Late data allowance, or how long does the system wait for late data after updating to a new event time
  ```
+
+To build this project run `sbt assembly` from an sbt shell.
 
 ## Assumptions
 1. Reporting of metrics is done after each consecutive and mutually exclusive time window (tumbling window)
