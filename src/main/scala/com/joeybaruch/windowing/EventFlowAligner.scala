@@ -3,8 +3,7 @@ package com.joeybaruch.windowing
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
-import com.joeybaruch.datamodel.{LogEvent, LogEventImpl}
+import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, LogEventImpl, SentinelEOFEvent}
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
 
@@ -37,7 +36,7 @@ object EventFlowAligner extends LazyLogging {
     logger.debug(s"allowed delay set to $allowedDelay")
   }
 
-  final private class QueueMethods(state: MapConcatState) {
+  private final class QueueMethods(state: MapConcatState) {
     def isOlderThanWatermark(event: LogEvent): Boolean = {
       val watermark = state.latestSeenTimestamp - state.allowedDelay
       event.timestamp < watermark

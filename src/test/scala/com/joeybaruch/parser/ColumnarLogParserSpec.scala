@@ -1,6 +1,7 @@
 package com.joeybaruch.parser
 
-import com.joeybaruch.datamodel.{Headers, LogEvent, LogEventImpl, Request, UnparsableEvent}
+import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, LogEventImpl}
+import com.joeybaruch.datamodel.{Headers, Request, UnparsableEvent}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec

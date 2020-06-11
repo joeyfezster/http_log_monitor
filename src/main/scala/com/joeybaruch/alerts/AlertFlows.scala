@@ -9,15 +9,14 @@ object AlertFlows {
   def processAlerts(observedAlertQueue: ObservedAlertQueue): Flow[EventsWindow, Nothing, NotUsed] = {
     Flow[EventsWindow]
       .map(win => {
-        assert(isOneSecond(win))
+        assert(win.isSingleTimeUnit)
         win
       })
       .statefulMapConcat { () =>
         element => {
-          observedAlertQueue.enQ(element)
+          observedAlertQueue.enQueue(element)
           Seq()
         }
       }
   }
-
 }

@@ -3,8 +3,8 @@ package com.joeybaruch.datamodel
 trait ObservedSubject[S] {
   this: S =>
   private var observers: List[Observer[S]] = Nil
-  def addObserver(observer: Observer[S]) = observers = observer :: observers
+  def addObserver(observer: Observer[S]): Unit = observers = observer :: observers
 
-  def notifyObservers() = observers.foreach(_.receiveUpdate(this))
+  def notifyObservers(): Unit = observers.foreach(_.receiveUpdate(this))
 }
 

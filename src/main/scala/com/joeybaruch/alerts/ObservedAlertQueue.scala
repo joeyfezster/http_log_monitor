@@ -6,21 +6,21 @@ import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.Config
 
 class ObservedAlertQueue(config: Config) extends AlertQueue(config) with ObservedSubject[AlertQueue] {
-  override def enQ(element: EventsWindow): Unit = {
+  override def enQueue(element: EventsWindow): Unit = {
     if (this.isEmpty) {
-      super.enQ(element)
+      super.enQueue(element)
       return
     }
 
     val prev = alertStatus
-    super.enQ(element)
+    super.enQueue(element)
     val current = alertStatus
 
     // only notify when there is a change from the previous state to the new state
     (prev, current) match {
       case (Up, Down) => notifyObservers()
       case (Down, Up) => notifyObservers()
-      case _ => () //do nothing
+      case _ => //no state change, do nothing
     }
   }
 }

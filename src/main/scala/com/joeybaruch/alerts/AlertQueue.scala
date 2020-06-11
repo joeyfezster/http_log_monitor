@@ -20,18 +20,24 @@ class AlertQueue(config: Config) extends LazyLogging {
 
 
   def alertStatus: AlertToggle = {
-    verifyNonEmpty
+    verifyNonEmpty()
     if (alertingElementsInQueue > 0) Up else Down
   }
 
-  def earliestTime: Long = queue.headOption.fold(Long.MinValue)(_.win.earliestTimestamp)
+  def earliestTime: Long = {
+    verifyNonEmpty()
+    queue.head.win.winStartTime
+  }
 
-  def latestTime: Long = queue.lastOption.fold(Long.MinValue)(_.win.earliestTimestamp)
+  def latestTime: Long = {
+    verifyNonEmpty()
+    queue.last.win.winStartTime
+  }
 
   def spanInQueue: Long = latestTime - earliestTime + 1
 
   def averageValue: Double = {
-    verifyNonEmpty
+    verifyNonEmpty()
     val avg = cumulativeValue.toDouble / spanInQueue
     logger.debug(s"average: $avg, cumulative: $cumulativeValue, span: $spanInQueue")
     avg
@@ -46,62 +52,52 @@ class AlertQueue(config: Config) extends LazyLogging {
     }
   }
 
-  def enQ(element: EventsWindow) = {
-    require(element.latestTimestamp == element.earliestTimestamp, "Alert Queue requires exactly one second aggregations")
-    require(element.earliestTimestamp > latestTime,
-      s"Event time ${element.earliestTimestamp} is later than the queue's latest event received: $latestTime")
+  def enQueue(element: EventsWindow): Unit = {
+    require(element.winEndTime == element.winStartTime, "Alert Queue requires exactly one second aggregations")
+    require(this.isEmpty || element.winStartTime > latestTime,
+      s"Event time ${element.winStartTime} is later than the queue's latest event received: $latestTime")
 
     logger.debug(s"enqueuing $element")
     queue.addOne(Element(element, Down))
     cumulativeValue += element.eventCount
 
-    deQUntilSpan
+    dequeueOverflowingEvents()
 
     updateIfAlert(element)
   }
 
-
-  /**
-   * This method is not as efficient as it could be, yet it is simple to implement and understand.
-   *
-   * This method is called more than once when the upstream log file has "wall clock" seconds without logs, otherwise
-   * it'll just evacuate at most one element.
-   *
-   * In the cases of wall-clock time passing without logs, this method will take linear time by the size of the queue,
-   * but by configuration, the queue is designed to hold in the order of hundreds of events, which is why this is an acceptable
-   * tradeoff.
-   *
-   **/
-  private def deQUntilSpan = {
+  private def dequeueOverflowingEvents(): Unit = {
     logger.debug(s"(latest -> earliest): ($latestTime -> $earliestTime)\t" +
       s"(spanInQueue vs requiredSpan)): ($spanInQueue vs $spanInSeconds)")
     while (spanInQueue > spanInSeconds) deQ()
   }
 
-  private def deQ() = {
+  private def deQ(): Element = {
     logger.debug("pop")
-    val poped = queue.dequeue()
+    val popped = queue.dequeue()
 
-    cumulativeValue -= poped.win.eventCount
-    if (poped.alertToggle equals Up) {
+    cumulativeValue -= popped.win.eventCount
+    if (popped.alertToggle equals Up) {
       alertingElementsInQueue -= 1
     }
-    poped
+    popped
   }
 
 
-  private def updateIfAlert(element: EventsWindow) = {
+  private def updateIfAlert(element: EventsWindow): Unit = {
     val newAvg = averageValue
     if (newAvg >= threshold) {
       logger.debug(s"alerting element - (t: threshold, cv: cumulativeValue, siq: spanInQueue, elem: element)" +
         s" (t: $threshold, cv: $cumulativeValue, tsn: $spanInQueue, elem: $element)")
       queue.last.alertToggle = Up
-      lastTriggeringTime = queue.last.win.earliestTimestamp
+      lastTriggeringTime = queue.last.win.winStartTime
       alertingElementsInQueue += 1
     }
   }
 
-  private def verifyNonEmpty = if (queue.isEmpty) throw new IndexOutOfBoundsException("The Alert Queue is currently empty")
+  private def verifyNonEmpty(): Unit = {
+    if (queue.isEmpty) throw new IndexOutOfBoundsException("The Alert Queue is currently empty")
+  }
 
 }
 

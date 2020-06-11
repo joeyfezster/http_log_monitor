@@ -1,7 +1,12 @@
 name := "http-log-monitor"
 
+mainClass in assembly := Some("com.joeybaruch.App")
+
 version := "1.0"
 scalaVersion := "2.13.2"
+
+scalacOptions += "-deprecation"
+scalacOptions += "-feature"
 
 resolvers += "Bintray" at "http://dl.bintray.com/websudos/oss-releases"
 
@@ -16,6 +21,4 @@ libraryDependencies ++= Seq(
 
   "org.scalatest" %% "scalatest" % "3.1.0" % Test,
   "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test
-  //  "com.typesafe.akka" %% "akka-actor-typed" % akkaVersion,
-  //  "com.typesafe.akka" %% "akka-actor-testkit-typed" % akkaVersion % Test,
 )

@@ -27,6 +27,7 @@ class ObservedAlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAft
 
   it should "report when alert is triggered and recovered" in {
     //                 expected:  (triggered, recovered)
+    //                       expected:  (triggered, recovered)
     val ie1 = (oneSecWin(1L, 10L), (false, false))
     val ie2 = (oneSecWin(2L, 10L), (false, false))
     val ie3 = (oneSecWin(3L, 10L), (false, false))
@@ -56,7 +57,7 @@ class ObservedAlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAft
 
     inputExpectedSeq.foreach {
       case (in, expectedTriggeredRecovered) =>
-        oaq.enQ(in)
+        oaq.enQueue(in)
         (in, testReporter.status) should be(in, expectedTriggeredRecovered)
         testReporter.reset()
     }
@@ -87,7 +88,7 @@ class ObservedAlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAft
 
     inputExpectedSeq.foreach {
       case (in, expectedTriggeredRecovered) =>
-        oaq.enQ(in)
+        oaq.enQueue(in)
         (in, testReporter.status) should be(in, expectedTriggeredRecovered)
         testReporter.reset()
     }

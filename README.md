@@ -2,7 +2,7 @@
 
 ## Installation Instructions
 
-
+java
 ## Running Instructions
 
 ## Assumptions
@@ -12,10 +12,19 @@ In other words, reports occur for each mutually exclusive 10 second batch of eve
 1. Timestamps are in seconds, not milliseconds
 
 ## System Design
-
+late data
+tumbling window
 
 
 ## Next Steps
+expand multi file
+abstract out AlertQueue type for future alert supporting
+custom graph stages, mutable classes change state only by one logical execution unit (flow) observer pattern does not
+ change
+ state, but still is a
+ delicate situation
+ in lieu of enough experience to write custom graph stages, stateful operations were
+ implemented with `statefulMapConcat` 
 
 ### Productionazition
 1. Mocking to decouple functionalities in tests

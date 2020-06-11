@@ -1,27 +1,23 @@
 package com.joeybaruch.parser
 
 import java.io.{File, FileInputStream}
-import java.nio.file.Paths
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.scaladsl.{Flow, Source, StreamConverters}
 import akka.util.ByteString
-import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
-import com.joeybaruch.datamodel.{LogEvent, LogLine}
-import com.typesafe.config.Config
+import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, SentinelEOFEvent}
+import com.joeybaruch.datamodel.{LegalLogEvent, LogLine}
 import com.typesafe.scalalogging.LazyLogging
 
-class FileDataReader(parser: LogParser)
-                    (implicit system: ActorSystem) extends LazyLogging {
+class FileDataReader(parser: LogParser)(implicit system: ActorSystem) extends LazyLogging {
 
-  def fileSource(filepath: String): Source[LogEvent, NotUsed] = {
-    logger.info(s"processing file: $filepath")
-    val file = Paths.get(filepath).toFile
+  def fileSource(file: File): Source[LogEvent, NotUsed] = {
     Source(Seq(file))
       .via(processSingleFile)
   }.concat(Source.single(SentinelEOFEvent))
+
 
   private lazy val processSingleFile: Flow[File, LogEvent, NotUsed] =
     Flow[File]

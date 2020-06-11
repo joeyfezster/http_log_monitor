@@ -1,10 +1,11 @@
 package com.joeybaruch
 
-import java.nio.file.Paths
+import java.io.File
 
 import com.joeybaruch.alerts.AlertQueue
 import com.joeybaruch.alerts.AlertQueue.{Down, Up}
-import com.joeybaruch.datamodel.{LogEvent, LogEventImpl, Observer, Request}
+import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, LogEventImpl}
+import com.joeybaruch.datamodel.{Observer, Request}
 import com.joeybaruch.windowing.EventsWindow
 
 object TestUtils {
@@ -34,9 +35,9 @@ object TestUtils {
     def status: (Boolean, Boolean) = (alertIsTriggered, alertIsRecovered)
   }
 
-  val smallSampleFile: String = Paths.get(getClass.getResource("/sample/small_sample_csv.txt").toURI).toString
-  val smallSampleWithSomeBadLogs: String = Paths.get(getClass.getResource("/sample/small_sample_bad_csv.txt").toURI).toString
-  val fullSampleFile: String = Paths.get(getClass.getResource("/sample/sample_csv.txt").toURI).toString
+  val smallSampleFile: File = new File(getClass.getResource("/sample/small_sample_csv.txt").toURI)
+  val smallSampleWithSomeBadLogs: File = new File(getClass.getResource("/sample/small_sample_bad_csv.txt").toURI)
+  val fullSampleFile: File = new File(getClass.getResource("/sample/sample_csv.txt").toURI)
 
   val logEvent1: LogEvent = LogEventImpl("10.0.0.2", "-", "apache", 1549573860, Request("get", "/api/user", Some("/api"), "http/1.0"), "200", 1234)
   val logEvent2: LogEvent = LogEventImpl("10.0.0.4", "-", "apache", 1549573861, Request("get", "/api/user", Some("/api"), "http/1.0"), "200", 1234)

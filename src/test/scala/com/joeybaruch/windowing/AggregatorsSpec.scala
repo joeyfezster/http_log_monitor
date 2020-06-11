@@ -20,7 +20,7 @@ class AggregatorsSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
 
   before {
     config = ConfigFactory.load("test-conf")
-      .withValue("windowing.metrics-window-size.seconds", ConfigValueFactory.fromAnyRef(3))
+      .withValue("metrics.report-every.seconds", ConfigValueFactory.fromAnyRef(3))
   }
 
   behavior of "one second aggregator"

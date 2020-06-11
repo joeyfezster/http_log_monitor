@@ -2,16 +2,10 @@ package com.joeybaruch.io
 
 import com.joeybaruch.alerts.AlertQueue
 import com.joeybaruch.alerts.AlertQueue.{Down, Up}
-import com.joeybaruch.io.ConsoleReporter.{ConsoleAlertReporter, ConsoleMetricsReporter}
+import com.joeybaruch.io.Reporters.{AlertReporter, MetricsReporter}
 import com.joeybaruch.metrics.MetricCollector
 
-class httConsoleReporter extends Reporter {
-  override val metricReporter: MetricsReporter = ConsoleMetricsReporter
-  override val alertReporter: AlertReporter = ConsoleAlertReporter
-}
-
 object ConsoleReporter {
-
   case object ConsoleMetricsReporter extends MetricsReporter {
     override def receiveUpdate(subject: MetricCollector): Unit = {
       println(subject.currentMetrics)

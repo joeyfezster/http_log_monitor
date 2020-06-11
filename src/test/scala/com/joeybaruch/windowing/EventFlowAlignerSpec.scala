@@ -3,8 +3,8 @@ package com.joeybaruch.windowing
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
 import com.joeybaruch.TestUtils._
-import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
-import com.joeybaruch.datamodel.{LogEvent, LogEventImpl}
+import com.joeybaruch.datamodel.LegalLogEvent
+import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, SentinelEOFEvent}
 import com.typesafe.config.{Config, ConfigFactory}
 import org.scalatest.BeforeAndAfter
 import org.scalatest.flatspec.AnyFlatSpec
@@ -50,7 +50,7 @@ class EventFlowAlignerSpec extends AnyFlatSpec with Matchers with BeforeAndAfter
   }
 
 
-  def addOffsetToEvent(event: LogEvent, offset: Long) = {
+  def addOffsetToEvent(event: LogEvent, offset: Long): LegalLogEvent.LogEventImpl = {
     val timesamp = event.timestamp - offset
     copyEventWithNewTimestamp(event, timesamp)
   }

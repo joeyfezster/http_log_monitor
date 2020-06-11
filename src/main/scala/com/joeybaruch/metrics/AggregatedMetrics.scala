@@ -1,6 +1,7 @@
 package com.joeybaruch.metrics
 
-import com.joeybaruch.datamodel.{LogEvent, WindowedEventsMonoid}
+import com.joeybaruch.datamodel.LegalLogEvent.LogEvent
+import com.joeybaruch.datamodel.WindowedEventsMonoid
 import com.joeybaruch.metrics.AggregatedMetrics._
 import com.joeybaruch.windowing.EventsWindow
 import com.typesafe.config.ConfigFactory
@@ -9,7 +10,6 @@ import scala.util.Try
 
 case class AggregatedMetrics(eventsWindow: EventsWindow,
 
-                             /** ****** business metrics *********/
                              httpMethodsCounters: NamedCountersCollection,
                              // could specific http methods/verbs be having negative trends?
                              httpMethodResponseStatusCounters: NamedCountersHyperCollection,
@@ -58,28 +58,27 @@ case class AggregatedMetrics(eventsWindow: EventsWindow,
   def getEventsWindow: EventsWindow = this.eventsWindow
 
 
-  def debugStats: String = {
+  private def debugStats: String = {
     val span = eventsWindow.timeSpan
     s"    ------  Debug Stats   ----------" +
       f"\n\tTotal bytes for period: $bytesCounter\t ${bytesCounter.toDouble / span}%.2f/sec" +
-      s"\n\tCalls by return status: ${printNCC(statusCounters, span)}" +
-      s"\n\tSection calls by response status: ${printNCHC(sectionResponseStatusCounters, span)} " +
-      s"\n\tCalls by Http method: ${printNCC(httpMethodsCounters, span)}" +
-      s"\n\tCalls by Http method by response status: ${printNCHC(httpMethodResponseStatusCounters, span)} " +
-      s"\n\tCalls by user: ${printNCC(usersCounters, span)}" +
-      s"\n\tCalls by user by response status: ${printNCHC(userResponseStatusCounter, span)} " +
-      s"\n\tCalls by hosts: ${printNCC(hostsCounters, span)}" +
-      s"\n\tCalls by hosts by response status: ${printNCHC(hostResponseStatusCounters, span)} "
+      s"\n\tCalls by return status: ${NCCString(statusCounters, span)}" +
+      s"\n\tSection calls by response status: ${NCHCString(sectionResponseStatusCounters, span)} " +
+      s"\n\tCalls by Http method: ${NCCString(httpMethodsCounters, span)}" +
+      s"\n\tCalls by Http method by response status: ${NCHCString(httpMethodResponseStatusCounters, span)} " +
+      s"\n\tCalls by user: ${NCCString(usersCounters, span)}" +
+      s"\n\tCalls by user by response status: ${NCHCString(userResponseStatusCounter, span)} " +
+      s"\n\tCalls by hosts: ${NCCString(hostsCounters, span)}" +
+      s"\n\tCalls by hosts by response status: ${NCHCString(hostResponseStatusCounters, span)} "
   }
 
 
   private val default3: Int = 3
-  // the following are unaffected by configs set at the test level, change in .conf file or as environment variable
-  private val showDebugStats: Boolean = Try(ConfigFactory.load().getBoolean("show-debug-stats")).getOrElse(true)
-  private val topN: Int = Try(ConfigFactory.load().getInt("top-sections-to-show")).getOrElse(default3)
+  private val showDebugStats: Boolean = Try(ConfigFactory.load().getBoolean("monitor.show-debug-stats")).getOrElse(true)
+  private val topN: Int = Try(ConfigFactory.load().getInt("monitor.top-sections-show-count")).getOrElse(default3)
 
 
-  def topSections: String = {
+  private def topSections: String = {
     val descendingSortedSectionsByCount = sectionCounters.toSeq.sortWith(_._2 > _._2)
     val topNSections = descendingSortedSectionsByCount.take(topN)
     topNSections.foldLeft("") {
@@ -89,14 +88,14 @@ case class AggregatedMetrics(eventsWindow: EventsWindow,
   }
 
   override def toString: String = {
-    val str = s"Metrics for period - ${eventsWindow.earliestTimestamp} : ${eventsWindow.latestTimestamp} (${eventsWindow.timeSpan} seconds):\n" +
+    val str = s"Metrics for period - ${eventsWindow.winStartTime} : ${eventsWindow.winEndTime} (${eventsWindow.timeSpan} seconds):\n" +
       s"    ------  Quick Stats   ----------" +
-      s"\n\tTotal legal log lines: ${eventsWindow.eventCount}" +
+      s"\n\tTotal traffic: ${eventsWindow.eventCount}\t ${eventsWindow.eventCount.toDouble / eventsWindow.timeSpan}/sec" +
       s"\n\tTop Sections Hit: $topSections" +
-      s"\n\tCall rate: ${eventsWindow.eventCount.toDouble / eventsWindow.timeSpan} calls per second" +
       s"\n"
 
-    (if (showDebugStats) str.concat(debugStats) else str) concat "\n\\-----------------------------------/"
+    val close = "\n\\-----------------------------------/"
+    (if (showDebugStats) str.concat(debugStats) else str) concat close
   }
 }
 
@@ -106,40 +105,22 @@ object AggregatedMetrics {
   def aggregate[T: WindowedEventsMonoid](seq: Seq[T]): T = implicitly[WindowedEventsMonoid[T]].aggregate(seq)
 
 
-  /** *************     Implicit monoids for our Aggregated Metrics containers        **************/
-
-  implicit val AggregatedMetricsMonoid: WindowedEventsMonoid[AggregatedMetrics] =
-    new WindowedEventsMonoid[AggregatedMetrics] {
-      override def empty: AggregatedMetrics = emptyAggregatedMetrics
-
-      override def combine(AggregatedMetrics1: AggregatedMetrics, AggregatedMetrics2: AggregatedMetrics): AggregatedMetrics =
-        AggregatedMetrics1 + AggregatedMetrics2
-    }
-
   type NamedCountersCollection = Map[String, Long]
   type NamedCountersHyperCollection = Map[String, NamedCountersCollection]
 
-  /** *************     Empty Units for Monoids        **************/
-  private def emptyImmutableNCC: NamedCountersCollection = Map.empty[String, Long]
 
-  private def emptyImmutableNCHC: NamedCountersHyperCollection = Map.empty[String, NamedCountersCollection]
+  /** *************     Implicit monoid, conversions, and extended funcionaliteis        **************/
+  import scala.language.implicitConversions
 
+  //implementing the monoid for this class:
+  implicit val AggregatedMetricsMonoid: WindowedEventsMonoid[AggregatedMetrics] =
+  new WindowedEventsMonoid[AggregatedMetrics] {
+    override def empty: AggregatedMetrics = emptyAggregatedMetrics
 
-  val emptyAggregatedMetrics: AggregatedMetrics = AggregatedMetrics(EventsWindow.emptyEventsWindow,
-    emptyImmutableNCC, emptyImmutableNCHC,
-    emptyImmutableNCC, emptyImmutableNCHC,
-    emptyImmutableNCC, emptyImmutableNCHC,
-    emptyImmutableNCC, emptyImmutableNCHC,
-    emptyImmutableNCC, 0L)
-
-
-  private def printNCC(map: NamedCountersCollection, span: Long): String = map.toSeq.foldLeft("") {
-    case (agg, (name, value)) => agg.concat(f"\n\t\t\t\t$name -> $value\t ${value.toDouble / span}%.2f/sec")
+    override def combine(AggregatedMetrics1: AggregatedMetrics, AggregatedMetrics2: AggregatedMetrics): AggregatedMetrics =
+      AggregatedMetrics1 + AggregatedMetrics2
   }
 
-  private def printNCHC(map: NamedCountersHyperCollection, span: Long): String = map.toSeq.foldLeft("") {
-    case (agg, (name, counterCollection)) => agg.concat(s"\n\t\t\t$name :: ${printNCC(counterCollection, span)}")
-  }
 
   // implicit classes lets us define our own methods on existing classes - like unions of Map[String, Long]
   implicit class StringLongMapExtension(val map: Map[String, Long]) {
@@ -183,4 +164,25 @@ object AggregatedMetrics {
       oneStatus, event.bytes)
   }
 
+  /** *************     Empty Units for Monoids        **************/
+  private def emptyImmutableNCC: NamedCountersCollection = Map.empty[String, Long]
+
+  private def emptyImmutableNCHC: NamedCountersHyperCollection = Map.empty[String, NamedCountersCollection]
+
+
+  val emptyAggregatedMetrics: AggregatedMetrics = AggregatedMetrics(EventsWindow.emptyEventsWindow,
+    emptyImmutableNCC, emptyImmutableNCHC,
+    emptyImmutableNCC, emptyImmutableNCHC,
+    emptyImmutableNCC, emptyImmutableNCHC,
+    emptyImmutableNCC, emptyImmutableNCHC,
+    emptyImmutableNCC, 0L)
+
+
+  private def NCCString(map: NamedCountersCollection, span: Long): String = map.toSeq.foldLeft("") {
+    case (agg, (name, value)) => agg.concat(f"\n\t\t\t\t$name -> $value\t ${value.toDouble / span}%.2f/sec")
+  }
+
+  private def NCHCString(map: NamedCountersHyperCollection, span: Long): String = map.toSeq.foldLeft("") {
+    case (agg, (name, counterCollection)) => agg.concat(s"\n\t\t\t$name :: ${NCCString(counterCollection, span)}")
+  }
 }

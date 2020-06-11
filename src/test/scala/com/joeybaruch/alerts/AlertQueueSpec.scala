@@ -26,16 +26,16 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
   it should "alert when crossing the threshold" in {
 
     //moving avg value: (10, 15, 20, 30)
-    aq.enQ(e1)
+    aq.enQueue(e1)
     aq.alertStatus should be(Down)
 
-    aq.enQ(e2)
+    aq.enQueue(e2)
     aq.alertStatus should be(Down)
 
-    aq.enQ(e3)
+    aq.enQueue(e3)
     aq.alertStatus should be(Down)
 
-    aq.enQ(e4)
+    aq.enQueue(e4)
     aq.alertStatus should be(Up)
   }
 
@@ -59,7 +59,7 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     //    aq.enQ(ie6._1); aq.alertStatus should be(ie6._2)
     //    aq.enQ(ie7._1); aq.alertStatus should be(ie7._2)
 
-    inputExpectedSeq.foreach { case (in, status) => aq.enQ(in); (in, aq.alertStatus) should be(in, status) }
+    inputExpectedSeq.foreach { case (in, status) => aq.enQueue(in); (in, aq.alertStatus) should be(in, status) }
   }
 
   it should "not recover alert if re-triggered even at the last second" in {
@@ -86,7 +86,7 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     //    aq.enQ(ie8._1); aq.alertStatus should be(ie8._2)
     //    aq.enQ(ie9._1); aq.alertStatus should be(ie9._2)
 
-    inputExpectedSeq.foreach { case (in, status) => aq.enQ(in); (in, aq.alertStatus) should be(in, status) }
+    inputExpectedSeq.foreach { case (in, status) => aq.enQueue(in); (in, aq.alertStatus) should be(in, status) }
   }
 
   it should "return the correct time when a status was changed" in {
@@ -101,51 +101,51 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
     val ie8 = oneSecWin(8L, 10L) // Up
     val ie9 = oneSecWin(70L, 10L) // Down   -> long time after
 
-    aq.enQ(ie1) //Down
-    aq.enQ(ie2) //Down
-    aq.enQ(ie3) //Down
-    aq.enQ(ie4) //Up    ***
-    aq.lastStatusChangeTime should be(ie4.earliestTimestamp)
+    aq.enQueue(ie1) //Down
+    aq.enQueue(ie2) //Down
+    aq.enQueue(ie3) //Down
+    aq.enQueue(ie4) //Up    ***
+    aq.lastStatusChangeTime should be(ie4.winStartTime)
 
-    aq.enQ(ie5) //Up
-    aq.enQ(ie6) //Up
-    aq.enQ(ie7) //Down  ***
-    aq.lastStatusChangeTime should be(ie7.earliestTimestamp)
+    aq.enQueue(ie5) //Up
+    aq.enQueue(ie6) //Up
+    aq.enQueue(ie7) //Down  ***
+    aq.lastStatusChangeTime should be(ie7.winStartTime)
 
-    aq.enQ(ie8) //Up
-    aq.enQ(ie9) //Down  *** Long time
-    aq.lastStatusChangeTime should be(ie8.earliestTimestamp + timeSpan)
+    aq.enQueue(ie8) //Up
+    aq.enQueue(ie9) //Down  *** Long time
+    aq.lastStatusChangeTime should be(ie8.winStartTime + timeSpan)
   }
 
   behavior of "enqueuing the alert queue"
   it should "update value as it ramps up" in {
-    aq.enQ(e1)
+    aq.enQueue(e1)
     aq.averageValue should be(e1.eventCount.toDouble) //10
 
-    aq.enQ(e2)
+    aq.enQueue(e2)
     aq.averageValue should be((e1.eventCount + e2.eventCount).toDouble / 2) //15
 
-    aq.enQ(e3)
+    aq.enQueue(e3)
     aq.averageValue should be((e1.eventCount + e2.eventCount + e3.eventCount).toDouble / 3) //20
   }
 
   it should "update value as sliding window" in {
-    Seq(e1, e2, e3, e4).foreach(aq.enQ(_))
+    Seq(e1, e2, e3, e4).foreach(aq.enQueue(_))
 
     aq.averageValue should be((e2.eventCount + e3.eventCount + e4.eventCount).toDouble / 3)
   }
 
   it should "update value with skipped time" in {
-    val skip1 = oneSecWin(e4.latestTimestamp + 2L, 60L)
+    val skip1 = oneSecWin(e4.winEndTime + 2L, 60L)
     val skipOneSec = Seq(e1, e2, e3, e4, skip1)
-    skipOneSec.foreach(aq.enQ(_))
+    skipOneSec.foreach(aq.enQueue(_))
 
     aq.averageValue should be((e4.eventCount + skip1.eventCount).toDouble / 3)
   }
 
   it should "evacuate when value skips all time" in {
     val skipAll = Seq(e1, e4)
-    skipAll.foreach(aq.enQ(_))
+    skipAll.foreach(aq.enQueue(_))
 
     aq.averageValue should be(e4.eventCount.toDouble / 1)
     aq.spanInQueue should be(1L)
@@ -162,14 +162,14 @@ class AlertQueueSpec extends AnyFlatSpec with Matchers with BeforeAndAfter {
 
   it should "not accept aggregated metrics with more than one second worth" in {
     intercept[IllegalArgumentException] {
-      aq.enQ(e1 + e2)
+      aq.enQueue(e1 + e2)
     }
   }
 
   it should "not accept late data" in {
     intercept[IllegalArgumentException] {
       val lateData = Seq(e1, e1)
-      lateData.foreach(aq.enQ(_))
+      lateData.foreach(aq.enQueue(_))
     }
   }
 

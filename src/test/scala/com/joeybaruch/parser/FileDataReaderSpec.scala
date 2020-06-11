@@ -1,10 +1,11 @@
 package com.joeybaruch.parser
 
+import java.io.File
+
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import com.joeybaruch.TestUtils._
-import com.joeybaruch.datamodel.LogEvent
-import com.joeybaruch.datamodel.LogEvent.SentinelEOFEvent
+import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, SentinelEOFEvent}
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 import org.scalatest.BeforeAndAfter
@@ -59,7 +60,7 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
   }
 
 
-  private def runParseForFile(filename: String): Seq[LogEvent] = {
+  private def runParseForFile(filename: File): Seq[LogEvent] = {
     val sourceUnderTest = new FileDataReader(new ColumnarLogParser(config)).fileSource(filename)
 
     val future = sourceUnderTest.take(10).runWith(Sink.seq)

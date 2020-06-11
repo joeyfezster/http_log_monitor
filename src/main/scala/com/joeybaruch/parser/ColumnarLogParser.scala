@@ -1,5 +1,6 @@
 package com.joeybaruch.parser
 
+import com.joeybaruch.datamodel.LegalLogEvent.LogEventImpl
 import com.joeybaruch.datamodel._
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
@@ -25,9 +26,8 @@ class ColumnarLogParser(config: Config) extends LogParser with LazyLogging {
   }
 
 
-  private def parseEventLine(columns: List[String]): LogLine = try {
+  private def parseEventLine(columns: List[String]): LogLine = {
     columns match {
-      //todo: is there a better way to enforce schema?
       case List(remoteHost, rfc931, authUser, timestamp, request, status, bytes)
         if areNumeric(timestamp, status, bytes) =>
         LogEventImpl(remoteHost, rfc931, authUser, timestamp.toLong, getRequest(request), status, bytes.toInt)

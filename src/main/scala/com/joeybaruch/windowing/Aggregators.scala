@@ -3,7 +3,8 @@ package com.joeybaruch.windowing
 import akka.NotUsed
 import akka.stream.contrib.AccumulateWhileUnchanged
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.datamodel.LogEvent
+import com.joeybaruch.datamodel.LegalLogEvent
+import com.joeybaruch.datamodel.LegalLogEvent.LogEvent
 import com.joeybaruch.metrics.AggregatedMetrics
 import com.typesafe.config.Config
 import com.typesafe.scalalogging.LazyLogging
@@ -13,7 +14,7 @@ import scala.concurrent.duration._
 object Aggregators extends LazyLogging {
 
   def oneSecondAggregator: Flow[LogEvent, AggregatedMetrics, NotUsed] = {
-    import AggregatedMetrics._
+    import AggregatedMetrics._ //implicit conversions (.as[SomethingElseThanOriginalType])
 
     Flow[LogEvent]
       .via(AccumulateWhileUnchanged[LogEvent, Long](le => le.timestamp))
@@ -35,8 +36,8 @@ object Aggregators extends LazyLogging {
       })
   }
 
-  final class AggregatingWindowState(config: Config) {
-    val maxWindowSize: Long = config.getInt("windowing.metrics-window-size.seconds").seconds.toSeconds
+  private class AggregatingWindowState(config: Config) {
+    val maxWindowSize: Long = config.getInt("metrics.report-every.seconds").seconds.toSeconds
     var agg: AggregatedMetrics = AggregatedMetrics.emptyAggregatedMetrics
 
     def aggregate(event: AggregatedMetrics): Seq[AggregatedMetrics] = {
@@ -54,16 +55,12 @@ object Aggregators extends LazyLogging {
   }
 
   def isOneSecond(metrics: AggregatedMetrics): Boolean = {
-    isOneSecond(metrics.eventsWindow)
+    metrics.eventsWindow.isSingleTimeUnit
   }
 
-  def isOneSecond(win: EventsWindow): Boolean = {
-    win.timeSpan == 1
-  }
-
-  private def transparentlyAssertOneSecond(dag: AggregatedMetrics) = {
-    assert(isOneSecond(dag))
-    dag
+  private def transparentlyAssertOneSecond(aggregatedMetrics: AggregatedMetrics) = {
+    assert(isOneSecond(aggregatedMetrics))
+    aggregatedMetrics
   }
 
 

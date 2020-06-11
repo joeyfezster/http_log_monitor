@@ -1,27 +1,33 @@
 package com.joeybaruch.windowing
 
-import com.joeybaruch.datamodel.{LogEvent, WindowedEventsMonoid}
+import com.joeybaruch.datamodel.LegalLogEvent.LogEvent
+import com.joeybaruch.datamodel.{LegalLogEvent, WindowedEventsMonoid}
 
 import scala.math.{max, min}
 
 case class EventsWindow(eventCount: Long,
-                        earliestTimestamp: Long,
-                        latestTimestamp: Long) {
+                        winStartTime: Long,
+                        winEndTime: Long) {
 
-  val timeSpan: Long = latestTimestamp - earliestTimestamp + 1
-
+  val timeSpan: Long = winEndTime - winStartTime + 1
 
   def +(that: EventsWindow): EventsWindow = {
     val newEventCount = this.eventCount + that.eventCount
-    val newEarliestTimestamp = min(this.earliestTimestamp, that.earliestTimestamp)
-    val newLatestTimestamp = max(this.latestTimestamp, that.latestTimestamp)
+    val newEarliestTimestamp = min(this.winStartTime, that.winStartTime)
+    val newLatestTimestamp = max(this.winEndTime, that.winEndTime)
 
     EventsWindow(newEventCount, newEarliestTimestamp, newLatestTimestamp)
   }
+
+  def isSingleTimeUnit: Boolean = this.winEndTime == this.winEndTime
 }
 
 object EventsWindow {
+
   val emptyEventsWindow: EventsWindow = EventsWindow(0L, Long.MaxValue, Long.MinValue)
+
+  /** *************     Implicit monoid and conversions        **************/
+  import scala.language.implicitConversions
 
   implicit val eventsWindowMonoid: WindowedEventsMonoid[EventsWindow] =
     new WindowedEventsMonoid[EventsWindow] {
