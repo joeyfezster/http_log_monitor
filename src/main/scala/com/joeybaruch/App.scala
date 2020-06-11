@@ -7,8 +7,11 @@ import akka.actor.ActorSystem
 import com.typesafe.config.{Config, ConfigFactory}
 import com.typesafe.scalalogging.LazyLogging
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
+import scala.io.StdIn
+import scala.util.{Failure, Success, Try}
+
 
 object App extends LazyLogging {
   //todo: customize execution context by execution hardware (profiling + knowledge of hw)
@@ -16,21 +19,22 @@ object App extends LazyLogging {
 
   val usage: String =
     """Usage: java [-D<option=value> ...] -jar <path-to-jar> <path-to-logfile>
+      |shell piping usage: <cmd that outputs file location> | java [-D<option=value>...] -jar <path-to-jar>
       |Configs: application.conf file is packaged with the jar, and can be overridden with environment variables;
       |for example:
-      |java -Dmonitor.show-debug-stats=TRUE -Dmetrics.report-every.seconds=100 -jar <path-to-jar> <path-to-logfile>
+      |unix: java -Dmonitor.show-debug-stats=TRUE -Dmetrics.report-every.seconds=100 -jar <path-to-jar> <path-to-logfile>
+      |windows: java "-Dmonitor.show-debug-stats=TRUE" "-Dmetrics.report-every.seconds=100" -jar <path-to-jar> <path-to-logfile>
       |""".stripMargin
 
   def main(args: Array[String]): Unit = {
-    requireArgs(args, 1)
     val inputFileOrDir = parseArgs(args)
 
     implicit val system: ActorSystem = ActorSystem()
     val config = ConfigFactory.load()
 
     // parallel processing of multiple files - feature toggle
-    val mulipleFilesEnabled = false
-    if (!mulipleFilesEnabled) {
+    val multipleFilesEnabled = false
+    if (!multipleFilesEnabled) {
       singleFileProcess(inputFileOrDir, config)
     } else {
       parallelProcessingOfDirectory(inputFileOrDir, config)
@@ -48,7 +52,7 @@ object App extends LazyLogging {
 
   private def parallelProcessingOfDirectory(inputFileOrDir: String, config: Config)(implicit system: ActorSystem): Unit = {
     /**
-     * Clarification : this "dead code" only serves to show how easily this project could process multiple logfiles
+     * Clarification : this "dead code" only serves to show how easily this project could process multiple log files
      * in parallel. Some simple modifications are still required, for example, adding a FileReporter s.t. the output
      * for each file goes to a file and not all to the console.
      **/
@@ -61,20 +65,22 @@ object App extends LazyLogging {
     Future.sequence(allFilesFutures).onComplete(_ => system.terminate())
   }
 
-  private def requireArgs(args: Array[String], count: Int): Unit = {
-    if (args.length < count) {
-      args.toList.foreach(println)
-      println(usage)
-      sys.exit(1)
-    }
-  }
-
   private def parseArgs(args: Array[String]): String = {
-    args(0) match {
-      case "-h" | "-help" | "--help" =>
-        println(usage)
-        sys.exit(0)
-      case arg: String => arg
+    if (args.length == 0) {
+      //taking input from pipeline, not interactive mode
+      val line = Try(Await.result(Future[String](StdIn.readLine()), 100.milliseconds)).getOrElse("")
+      line match {
+        case str: String if str.nonEmpty => str.trim
+        case _ => println(usage); sys.exit(1)
+      }
+    }
+    else {
+      args(0) match {
+        case "-h" | "-help" | "--help" =>
+          println(usage)
+          sys.exit(0)
+        case arg: String => arg
+      }
     }
   }
 

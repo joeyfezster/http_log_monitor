@@ -10,6 +10,8 @@ java
 rather than report every x seconds for the aggregation of the past 10. 
 In other words, reports occur for each mutually exclusive 10 second batch of events. 
 1. Timestamps are in seconds, not milliseconds
+1. Taking input from stdin is assumed to mean by shell piping, not interactive mode
+ (`> echo "file" | myProgram`) 
 
 ## System Design
 late data
