@@ -44,10 +44,6 @@ class FileDataReaderSpec extends AnyFlatSpec with Matchers with BeforeAndAfter w
     result should contain theSameElementsInOrderAs fileParseResults
   }
 
-  //todo: test for empty file - throw exception?
-  it should "" in {
-  }
-
   behavior of "Implicit Ordering of LogEvents"
   it should "order in ascending order" in {
     val q = mutable.PriorityQueue.empty[LogEvent]

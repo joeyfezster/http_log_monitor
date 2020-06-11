@@ -23,7 +23,6 @@ object HttpLogMonitor {
     val parser = new ColumnarLogParser(config)
     val fileDataReader = new FileDataReader(parser)
 
-    // todo: write about def vs val -> writing custom graph stage
     val observedAlertQueue = new ObservedAlertQueue(config)
     val observedMetricsCollector = new ObservedMetricsCollector
     val consoleReporter = ConsoleReporter

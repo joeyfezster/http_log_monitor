@@ -17,10 +17,6 @@ object LegalLogEvent {
     override def compare(that: LogEvent): Int = -this.timestamp.compareTo(that.timestamp)
   }
 
-  //todo
-  //cat blah.txt | java -jar "something"
-  //java -jar somethings -f filename
-
   case class LogEventImpl(host: String,
                           rfc931: String,
                           authUser: String,
