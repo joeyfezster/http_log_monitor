@@ -7,7 +7,7 @@ import com.typesafe.scalalogging.LazyLogging
 
 import scala.collection.mutable
 
-/** todo comment - Not thread safe, but Akka will have one per file under processing**/
+/** todo comment - Not thread safe, but Akka will have one per file under processing **/
 class AlertQueue(config: Config) extends LazyLogging {
   private val spanInSeconds = config.getInt("alerts.raise-recover.avg.seconds")
   private val threshold = config.getDouble("alerts.requests.per-second.threshold")
@@ -45,7 +45,7 @@ class AlertQueue(config: Config) extends LazyLogging {
 
   def isEmpty: Boolean = queue.isEmpty
 
-  def lastStatusChangeTime : Long = {
+  def lastStatusChangeTime: Long = {
     alertStatus match {
       case Up => lastTriggeringTime
       case Down => scala.math.min(latestTime, lastTriggeringTime + spanInSeconds.toLong)

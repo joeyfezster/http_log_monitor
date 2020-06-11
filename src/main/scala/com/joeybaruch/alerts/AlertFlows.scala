@@ -2,7 +2,6 @@ package com.joeybaruch.alerts
 
 import akka.NotUsed
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.windowing.Aggregators._
 import com.joeybaruch.windowing.EventsWindow
 
 object AlertFlows {

@@ -1,7 +1,7 @@
 package com.joeybaruch.windowing
 
 import com.joeybaruch.datamodel.LegalLogEvent.LogEvent
-import com.joeybaruch.datamodel.{LegalLogEvent, WindowedEventsMonoid}
+import com.joeybaruch.datamodel.WindowedEventsMonoid
 
 import scala.math.{max, min}
 
@@ -27,6 +27,7 @@ object EventsWindow {
   val emptyEventsWindow: EventsWindow = EventsWindow(0L, Long.MaxValue, Long.MinValue)
 
   /** *************     Implicit monoid and conversions        **************/
+
   import scala.language.implicitConversions
 
   implicit val eventsWindowMonoid: WindowedEventsMonoid[EventsWindow] =

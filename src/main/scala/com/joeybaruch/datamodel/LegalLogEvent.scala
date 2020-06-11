@@ -1,6 +1,7 @@
 package com.joeybaruch.datamodel
 
 object LegalLogEvent {
+
   trait LogEvent extends LogLine with Ordered[LogEvent] {
     val host: String
     val rfc931: String
@@ -17,8 +18,8 @@ object LegalLogEvent {
   }
 
   //todo
-  //cat blah.txt | java -jar lfkjdslfjlj
-  //java -jar lfkjdslfjlj -f filename
+  //cat blah.txt | java -jar "something"
+  //java -jar somethings -f filename
 
   case class LogEventImpl(host: String,
                           rfc931: String,

@@ -109,17 +109,18 @@ object AggregatedMetrics {
   type NamedCountersHyperCollection = Map[String, NamedCountersCollection]
 
 
-  /** *************     Implicit monoid, conversions, and extended funcionaliteis        **************/
+  /** *************     Implicit monoid, conversions, and extended functionalities        **************/
+
   import scala.language.implicitConversions
 
   //implementing the monoid for this class:
   implicit val AggregatedMetricsMonoid: WindowedEventsMonoid[AggregatedMetrics] =
-  new WindowedEventsMonoid[AggregatedMetrics] {
-    override def empty: AggregatedMetrics = emptyAggregatedMetrics
+    new WindowedEventsMonoid[AggregatedMetrics] {
+      override def empty: AggregatedMetrics = emptyAggregatedMetrics
 
-    override def combine(AggregatedMetrics1: AggregatedMetrics, AggregatedMetrics2: AggregatedMetrics): AggregatedMetrics =
-      AggregatedMetrics1 + AggregatedMetrics2
-  }
+      override def combine(AggregatedMetrics1: AggregatedMetrics, AggregatedMetrics2: AggregatedMetrics): AggregatedMetrics =
+        AggregatedMetrics1 + AggregatedMetrics2
+    }
 
 
   // implicit classes lets us define our own methods on existing classes - like unions of Map[String, Long]

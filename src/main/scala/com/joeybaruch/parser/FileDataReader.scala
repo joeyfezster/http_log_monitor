@@ -8,7 +8,7 @@ import akka.stream.alpakka.csv.scaladsl.CsvParsing
 import akka.stream.scaladsl.{Flow, Source, StreamConverters}
 import akka.util.ByteString
 import com.joeybaruch.datamodel.LegalLogEvent.{LogEvent, SentinelEOFEvent}
-import com.joeybaruch.datamodel.{LegalLogEvent, LogLine}
+import com.joeybaruch.datamodel.LogLine
 import com.typesafe.scalalogging.LazyLogging
 
 class FileDataReader(parser: LogParser)(implicit system: ActorSystem) extends LazyLogging {

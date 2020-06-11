@@ -3,7 +3,7 @@ package com.joeybaruch
 import java.io.File
 
 import akka.actor.ActorSystem
-import akka.stream.{ClosedShape, KillSwitches, UniqueKillSwitch}
+import akka.stream.ClosedShape
 import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Keep, RunnableGraph, Sink, Source}
 import akka.{Done, NotUsed}
 import com.joeybaruch.alerts.{AlertFlows, ObservedAlertQueue}
@@ -49,7 +49,7 @@ object HttpLogMonitor {
         .via(AlertFlows.processAlerts(observedAlertQueue))
         .toMat(Sink.ignore)(Keep.right)
 
-    /**  Broadcast - split the stream to alerts and metrics separately**/
+    /** Broadcast - split the stream to alerts and metrics separately **/
     val (alerts: Future[Done], metrics: Future[Done]) =
       RunnableGraph
         .fromGraph(GraphDSL.create(alertSink, metricsSink)(Tuple2.apply) {

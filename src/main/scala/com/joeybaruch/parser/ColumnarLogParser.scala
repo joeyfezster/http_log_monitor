@@ -14,7 +14,7 @@ class ColumnarLogParser(config: Config) extends LogParser with LazyLogging {
     val headers: List[String] = config.getList("schema.legal-headers").asScala.map(_.unwrapped().toString).toList
 
     columns match {
-      case _  if columns == headers =>
+      case _ if columns == headers =>
         logger.info(s"Headers match in file $filename")
         Headers(headers)
       case _ => parseEventLine(columns)

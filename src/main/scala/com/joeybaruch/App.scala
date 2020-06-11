@@ -74,7 +74,7 @@ object App extends LazyLogging {
       case "-h" | "-help" | "--help" =>
         println(usage)
         sys.exit(0)
-      case arg : String => arg
+      case arg: String => arg
     }
   }
 
@@ -89,7 +89,7 @@ object App extends LazyLogging {
   }
 
   private def handleProcessingResult(alertsFuture: Future[Done], metricsFuture: Future[Done])(implicit
-  system: ActorSystem): Unit = {
+                                                                                              system: ActorSystem): Unit = {
     (alertsFuture zip metricsFuture).onComplete {
       case Success(_) =>
         logger.info("Successfully processed alerts and metrics")

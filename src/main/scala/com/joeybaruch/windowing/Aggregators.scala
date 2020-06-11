@@ -3,7 +3,6 @@ package com.joeybaruch.windowing
 import akka.NotUsed
 import akka.stream.contrib.AccumulateWhileUnchanged
 import akka.stream.scaladsl.Flow
-import com.joeybaruch.datamodel.LegalLogEvent
 import com.joeybaruch.datamodel.LegalLogEvent.LogEvent
 import com.joeybaruch.metrics.AggregatedMetrics
 import com.typesafe.config.Config

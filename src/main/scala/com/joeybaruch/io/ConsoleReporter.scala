@@ -6,6 +6,7 @@ import com.joeybaruch.io.Reporters.{AlertReporter, MetricsReporter}
 import com.joeybaruch.metrics.MetricCollector
 
 object ConsoleReporter {
+
   case object ConsoleMetricsReporter extends MetricsReporter {
     override def receiveUpdate(subject: MetricCollector): Unit = {
       println(subject.currentMetrics)
